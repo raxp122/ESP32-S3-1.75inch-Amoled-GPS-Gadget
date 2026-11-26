@@ -33,6 +33,8 @@ static void defaults(settings_t *s)
     s->night_to_h = 7;
     s->night_mode = 0;
     s->disp_slideshow = 1;
+    s->dice = (dice_spec_t){1, 20, 0, DICE_NORMAL, 0};
+    s->dice_shake = 1;
 }
 
 void settings_load(void)
@@ -63,6 +65,7 @@ void settings_load(void)
     if (g_set.night_from_h > 23) g_set.night_from_h = 23;
     if (g_set.night_to_h > 23) g_set.night_to_h = 7;
     if (g_set.disp_interval_s < 3) g_set.disp_interval_s = 30;
+    g_set.dice = dice_clamp(g_set.dice);
 }
 
 void settings_save(void)

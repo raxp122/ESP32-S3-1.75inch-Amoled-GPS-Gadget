@@ -4,6 +4,9 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include "core.h"
+
+#define DICE_FAVS 6
 
 typedef struct {
     // screen
@@ -31,6 +34,10 @@ typedef struct {
     uint8_t  disp_slideshow;    // last display mode: 1 slideshow, 0 single media
     char     disp_last[48];     // last media shown (file name)
     uint8_t  gps_on;            // -G version: GPS powered (unused for now)
+    // dice
+    dice_spec_t dice;           // the current roll
+    uint8_t  dice_shake;        // shake the pendant to roll
+    dice_spec_t dice_fav[DICE_FAVS];   // saved rolls (count 0 = empty)
 } settings_t;
 
 extern settings_t g_set;

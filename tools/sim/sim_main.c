@@ -45,6 +45,17 @@ static void ev(ev_t e, int x, int y)
     run(350);
 }
 
+// home ring: the order of main/apps/home.c
+enum { A_PENDANT, A_GALLERY, A_UPLOAD, A_DICE, A_CLOCK, A_SETTINGS, A_INFO, A_COUNT };
+static int home_sel;
+static void open_app(int a)
+{
+    ev(EV_BOOT_LONG, 0, 0);   // home (from pendant mode: back to the menus first)
+    ev(EV_BOOT_LONG, 0, 0);
+    while (home_sel != a) { ev(EV_DIAL_CW, 400, 200); home_sel = (home_sel + 1) % A_COUNT; }
+    ev(EV_TAP, SCR_C, SCR_C);
+}
+
 // labels whose text pokes out of the round screen
 static void check_obj(lv_obj_t *o)
 {
@@ -109,6 +120,8 @@ int main(int argc, char **argv)
     g_set.disp_slideshow = 1;
     g_set.sleep_s = 0;
     strcpy(g_set.wifi_ssid, "Casa");
+    g_set.dice = (dice_spec_t){1, 20, 0, 0, 0};
+    g_set.dice_shake = 1;
     report = fopen("out/layout-report.md", "w");
     fprintf(report, "# Layout report\n\nText outside the round screen (466 px circle):\n\n");
 
@@ -122,9 +135,7 @@ int main(int argc, char **argv)
     ui_init();
 
     shot("01_home");
-    ev(EV_DIAL_CW, 400, 200);
-    shot("02_home_gallery");
-    ev(EV_TAP, SCR_C, SCR_C);
+    open_app(A_GALLERY);
     shot("03_gallery");
     ev(EV_LONG_PRESS, SCR_C, SCR_C);
     shot("04_gallery_actions");
@@ -135,22 +146,15 @@ int main(int argc, char **argv)
     shot("06_pendant_exit_ring");
     sim_boot_held = 0;
     ev(EV_BOOT_LONG, 0, 0);
-    ev(EV_BOOT_CLICK, 0, 0);
-    ev(EV_DIAL_CW, 400, 200);
-    ev(EV_TAP, SCR_C, SCR_C);
+    open_app(A_UPLOAD);
     shot("07_upload");
-    ev(EV_BOOT_CLICK, 0, 0);
     sim_wifi = WIFI_NO_NETWORK;
-    ev(EV_TAP, SCR_C, SCR_C);
+    open_app(A_UPLOAD);
     shot("08_upload_hotspot");
-    ev(EV_BOOT_CLICK, 0, 0);
     sim_wifi = WIFI_CONNECTED;
-    ev(EV_DIAL_CW, 400, 200);
-    ev(EV_TAP, SCR_C, SCR_C);
+    open_app(A_CLOCK);
     shot("09_clock");
-    ev(EV_BOOT_CLICK, 0, 0);
-    ev(EV_DIAL_CW, 400, 200);
-    ev(EV_TAP, SCR_C, SCR_C);
+    open_app(A_SETTINGS);
     shot("10_settings");
     ev(EV_DIAL_CW, 400, 200);
     ev(EV_TAP, SCR_C, SCR_C);
@@ -177,13 +181,10 @@ int main(int argc, char **argv)
     ev(EV_PULL_DOWN, SCR_C, 30);
     shot("17_quick_panel");
     ev(EV_SWIPE_UP, SCR_C, 300);
-    ev(EV_DIAL_CW, 400, 200);
-    ev(EV_TAP, SCR_C, SCR_C);   // info
+    open_app(A_INFO);
     shot("18_info");
-    ev(EV_BOOT_CLICK, 0, 0);
     sim_ota = OTA_AVAILABLE;
-    ev(EV_DIAL_CCW, 400, 200);
-    ev(EV_TAP, SCR_C, SCR_C);   // settings
+    open_app(A_SETTINGS);
     for (int i = 0; i < 4; i++) ev(EV_DIAL_CW, 400, 200);
     ev(EV_TAP, SCR_C, SCR_C);   // updates
     ev(EV_TAP, SCR_C, SCR_C);   // firmware
@@ -197,13 +198,50 @@ int main(int argc, char **argv)
     shot("21_power_off_ring");
     sim_pwr_held = 0;
     run(100);
-    sim_sd = true;
     sim_media = 0;
-    for (int i = 0; i < 3; i++) ev(EV_DIAL_CW, 400, 200);   // settings -> info -> pendant -> gallery
-    ev(EV_TAP, SCR_C, SCR_C);
+    open_app(A_GALLERY);
     shot("22_gallery_empty");
-    ev(EV_BOOT_CLICK, 0, 0);
     sim_media = 7;
+
+    // dice
+    open_app(A_DICE);
+    shot("30_dice_start");
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(900);
+    shot("31_dice_d20");
+    ev(EV_SWIPE_LEFT, SCR_C, SCR_C);   // advantage
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(900);
+    shot("32_dice_advantage");
+    ev(EV_DIAL_CCW, 400, 200);         // d12
+    ev(EV_DIAL_CCW, 400, 200);         // d10
+    ev(EV_DIAL_CCW, 400, 200);         // d8
+    ev(EV_DIAL_CCW, 400, 200);         // d6
+    for (int i = 0; i < 7; i++) ev(EV_SWIPE_UP, SCR_C, 300);   // 8d6 (fireball)
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(900);
+    shot("33_dice_fireball");
+    ev(EV_LONG_PRESS, SCR_C, SCR_C);
+    shot("34_dice_options");
+    for (int i = 0; i < 5; i++) ev(EV_DIAL_CW, 400, 200);
+    ev(EV_TAP, SCR_C, SCR_C);
+    shot("35_dice_stats");
+    ev(EV_BOOT_CLICK, 0, 0);
+    ev(EV_DIAL_CW, 400, 200);
+    ev(EV_TAP, SCR_C, SCR_C);
+    shot("36_dice_history");
+    ev(EV_BOOT_CLICK, 0, 0);
+    ev(EV_BOOT_CLICK, 0, 0);
+    ev(EV_DIAL_CW, 400, 200);          // d8
+    ev(EV_DIAL_CW, 400, 200);          // d10
+    ev(EV_DIAL_CW, 400, 200);          // d12
+    ev(EV_DIAL_CW, 400, 200);          // d20
+    ev(EV_DIAL_CW, 400, 200);          // d100
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(900);
+    shot("37_dice_d100");
+    ev(EV_BOOT_CLICK, 0, 0);
+
     g_set.lang = LANG_EN;
     g_set.accent = 2;
     ui_rebuild();

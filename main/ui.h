@@ -64,6 +64,12 @@ extern const lv_font_t font_icon;   // 64 px, icons only
 #define IC_SD         "\xEF\x9E\xA0"
 #define IC_CHIP       "\xEF\x8B\x9B"
 #define IC_REFRESH    "\xEF\x80\xA1"
+#define IC_DICE_D20   "\xEF\x9B\x8F"
+#define IC_DICE       "\xEF\x94\xA2"
+#define IC_HISTORY    "\xEF\x87\x9A"
+#define IC_SAVE       "\xEF\x83\x87"
+#define IC_PLUS       "\xEF\x81\xA7"
+#define IC_MINUS      "\xEF\x81\xA8"
 
 /* ---- colours: pure black (AMOLED pixels off) + warm whites + one accent ---- */
 #define C_BG     lv_color_hex(0x000000)
@@ -163,7 +169,7 @@ extern const screen_t scr_menu;             // arg = menu_t*
 /* ---- the screens (apps/) ---- */
 extern const screen_t scr_home, scr_gallery, scr_pendant, scr_upload, scr_clock, scr_info,
                       scr_quick, scr_settings, scr_wifi, scr_wifi_scan, scr_wifi_portal, scr_ota,
-                      scr_keyboard;
+                      scr_keyboard, scr_dice, scr_dice_favs, scr_dice_hist, scr_dice_stats;
 
 // pendant mode: start = index in the media list, slideshow or a single media
 typedef struct { int start; bool slideshow; } pendant_arg_t;
