@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AmuletOS</title>
+<style>
+:root{--bg:#0a0908;--card:#151412;--line:#2a2723;--text:#f4f1ea;--dim:#8c877d;--acc:#e9c46a;--warn:#ff6b57;--ok:#6be39a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;padding:20px 16px 60px;max-width:560px;margin:auto}
+h1{font-size:1.5rem;margin:0;display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.02em}
+h1 i{width:30px;height:30px;border-radius:50%;border:2px solid var(--acc);display:inline-block;position:relative}
+h1 i:after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--acc)}
+.sub{color:var(--dim);margin:4px 0 22px;font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0}
+button,.btn{font:600 1rem system-ui,sans-serif;border:0;border-radius:14px;padding:14px 18px;cursor:pointer;background:var(--acc);color:#1a1405;width:100%;display:block;text-align:center}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.45}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+label{display:block;color:var(--dim);font-size:.85rem;margin:14px 0 6px}
+input[type=text],select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0f0e0c;color:var(--text);font:inherit}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.pin{display:flex;gap:10px;justify-content:center;margin:10px 0 18px}
+.pin input{width:58px;height:66px;text-align:center;font:600 1.8rem system-ui;border-radius:14px;border:1px solid var(--line);background:#0f0e0c;color:var(--text)}
+.err{color:var(--warn);min-height:1.4em;text-align:center;font-size:.9rem}
+#stage{position:relative;width:min(84vw,340px);aspect-ratio:1;margin:6px auto 8px;touch-action:none;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 0 0 2px var(--acc),0 0 0 9999px rgba(0,0,0,0)}
+#stage canvas{width:100%;height:100%;display:block}
+.hint{color:var(--dim);font-size:.85rem;text-align:center}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:10px 0 4px}.bar>div{height:100%;width:0;background:var(--acc);transition:width .15s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px}
+.item{text-align:center;font-size:.78rem;color:var(--dim);word-break:break-all}
+.item .th{width:100%;aspect-ratio:1;border-radius:50%;background:#000 center/cover;border:1px solid var(--line);position:relative}
+.item .th b{position:absolute;right:-2px;bottom:-2px;background:var(--card);border:1px solid var(--line);color:var(--acc);border-radius:10px;font-size:.7rem;padding:1px 6px}
+.item button{margin-top:6px;padding:6px;font-size:.78rem;background:transparent;border:1px solid var(--line);color:var(--warn);border-radius:10px}
+.hidden{display:none!important}
+small{color:var(--dim)}
+</style>
+</head>
+<body>
+<h1><i></i>AmuletOS</h1>
+<div class="sub" id="info">&nbsp;</div>
+
+<!-- PIN -->
+<div class="card" id="pinCard">
+  <div style="text-align:center" data-t="pinTitle"></div>
+  <div class="pin" id="pinBox">
+    <input inputmode="numeric" maxlength="1"><input inputmode="numeric" maxlength="1"><input inputmode="numeric" maxlength="1"><input inputmode="numeric" maxlength="1">
+  </div>
+  <div class="err" id="pinErr"></div>
+</div>
+
+<!-- main -->
+<div id="main" class="hidden">
+  <div class="card">
+    <input type="file" id="file" accept="image/*,video/*,.gif" multiple class="hidden">
+    <button id="pick" data-t="add"></button>
+    <div class="hint" style="margin-top:10px" data-t="addHint"></div>
+  </div>
+
+  <div class="card hidden" id="editor">
+    <div class="row" style="margin-bottom:8px"><b id="edTitle" style="flex:3"></b><small id="edCount" style="text-align:right"></small></div>
+    <div id="stage"><canvas id="cv" width="466" height="466"></canvas></div>
+    <div class="hint" data-t="cropHint"></div>
+    <label data-t="zoom"></label><input type="range" id="zoom" min="100" max="400" value="100">
+    <div id="vidOpts" class="hidden">
+      <label><span data-t="start"></span> <small id="startV"></small></label><input type="range" id="start" min="0" max="0" step="0.1" value="0">
+      <label><span data-t="length"></span> <small id="lenV"></small></label><input type="range" id="len" min="1" max="60" step="1" value="10">
+      <div class="row">
+        <div><label data-t="fps"></label><select id="fps"><option>10</option><option selected>15</option><option>20</option><option>24</option></select></div>
+        <div><label data-t="quality"></label><select id="q"><option value="0.6" data-t="qLow"></option><option value="0.72" selected data-t="qMid"></option><option value="0.85" data-t="qHigh"></option></select></div>
+      </div>
+    </div>
+    <label data-t="name"></label><input type="text" id="name" maxlength="40">
+    <div class="row" style="margin-top:16px"><button class="ghost" id="skip" data-t="skip"></button><button id="send" data-t="send"></button></div>
+    <div id="prog" class="hidden"><div class="bar"><div id="barIn"></div></div><div class="hint" id="progT"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><b data-t="onDevice"></b><small id="count" style="text-align:right"></small></div>
+    <div class="grid" id="list"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const IT = (navigator.language || "").toLowerCase().startsWith("it");
+const TX = {
+  pinTitle: ["Enter the PIN shown on the pendant", "Inserisci il PIN che vedi sul ciondolo"],
+  pinWrong: ["Wrong PIN", "PIN errato"],
+  add: ["Add photos, GIFs or videos", "Aggiungi foto, GIF o video"],
+  addHint: ["Everything is cropped to the circle and converted here on your phone, then sent to the pendant.", "Tutto viene ritagliato nel cerchio e convertito qui sul telefono, poi inviato al ciondolo."],
+  cropHint: ["Drag to move, pinch or use the slider to zoom", "Trascina per spostare, pizzica o usa il cursore per lo zoom"],
+  zoom: ["Zoom", "Zoom"], start: ["Start", "Inizio"], length: ["Length", "Durata"], fps: ["Frames per second", "Fotogrammi al secondo"],
+  quality: ["Quality", "Qualità"], qLow: ["Light", "Leggera"], qMid: ["Balanced", "Bilanciata"], qHigh: ["High", "Alta"],
+  name: ["Name", "Nome"], skip: ["Skip", "Salta"], send: ["Send to pendant", "Invia al ciondolo"],
+  onDevice: ["On the pendant", "Sul ciondolo"], del: ["Delete", "Elimina"], delAsk: ["Delete %s?", "Eliminare %s?"],
+  converting: ["Converting frame %a of %b…", "Converto il fotogramma %a di %b…"], sending: ["Sending… %a%", "Invio… %a%"],
+  done: ["Sent ✓", "Inviato ✓"], failed: ["Failed: %s", "Non riuscito: %s"], noSd: ["No microSD in the pendant", "Nessuna microSD nel ciondolo"],
+  free: ["%a GB free", "%a GB liberi"], items: ["%a media", "%a media"], of: ["%a of %b", "%a di %b"],
+  unsupported: ["This file cannot be read by this browser", "Questo browser non riesce a leggere il file"],
+  tooBig: ["Not enough space on the microSD", "Spazio insufficiente sulla microSD"],
+};
+const t = (k, a, b) => (TX[k] ? TX[k][IT ? 1 : 0] : k).replace("%a", a).replace("%b", b).replace("%s", a);
+document.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+const $ = id => document.getElementById(id);
+const S = 466, TH = 240;
+let PIN = sessionStorage.getItem("pin") || "", info = {}, files = [], fileIdx = 0, existing = new Set();
+
+/* ---------------- API ---------------- */
+function api(path, opt = {}) {
+  opt.headers = Object.assign({"X-Pin": PIN}, opt.headers || {});
+  return fetch(path, opt);
+}
+function upload(name, kind, blob, onProg) {
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest();
+    x.open("POST", "/api/upload?f=" + encodeURIComponent(name) + "&t=" + kind);
+    x.setRequestHeader("X-Pin", PIN);
+    x.upload.onprogress = e => e.lengthComputable && onProg && onProg(e.loaded / e.total);
+    x.onload = () => x.status == 200 ? res() : rej(new Error(x.responseText || x.status));
+    x.onerror = () => rej(new Error("network"));
+    x.send(blob);
+  });
+}
+async function loadInfo() {
+  info = await (await fetch("/api/info")).json();
+  $("info").textContent = "v" + info.version + "  ·  " + (info.sd ? t("free", (info.free / 1e9).toFixed(1)) : t("noSd"));
+}
+async function loadList() {
+  const r = await api("/api/list");
+  if (!r.ok) return;
+  const l = await r.json();
+  existing = new Set(l.map(m => m.f.replace(/\.[^.]+$/, "").toLowerCase()));
+  $("count").textContent = t("items", l.length);
+  const g = $("list");
+  g.innerHTML = "";
+  for (const m of l) {
+    const d = document.createElement("div");
+    d.className = "item";
+    const th = document.createElement("div");
+    th.className = "th";
+    if (m.k == 2) th.innerHTML = "<b>GIF/VIDEO</b>";
+    api("/api/thumb?f=" + encodeURIComponent(m.f)).then(r => r.ok ? r.blob() : null).then(b => { if (b) th.style.backgroundImage = "url(" + URL.createObjectURL(b) + ")"; });
+    const n = document.createElement("div");
+    n.textContent = m.f.replace(/\.[^.]+$/, "").replace(/_/g, " ");
+    const del = document.createElement("button");
+    del.textContent = t("del");
+    del.onclick = async () => {
+      if (!confirm(t("delAsk", n.textContent))) return;
+      await api("/api/delete?f=" + encodeURIComponent(m.f), {method: "POST"});
+      loadList(); loadInfo();
+    };
+    d.append(th, n, del);
+    g.append(d);
+  }
+}
+
+/* ---------------- PIN ---------------- */
+const pins = [...$("pinBox").querySelectorAll("input")];
+pins.forEach((p, i) => {
+  p.addEventListener("input", () => {
+    p.value = p.value.replace(/\D/g, "").slice(-1);
+    if (p.value && i < 3) pins[i + 1].focus();
+    const v = pins.map(x => x.value).join("");
+    if (v.length == 4) tryPin(v);
+  });
+  p.addEventListener("keydown", e => { if (e.key == "Backspace" && !p.value && i) pins[i - 1].focus(); });
+});
+async function tryPin(v) {
+  PIN = v;
+  const r = await api("/api/auth", {method: "POST"});
+  if (r.ok) { sessionStorage.setItem("pin", v); showMain(); }
+  else { $("pinErr").textContent = t("pinWrong"); pins.forEach(p => p.value = ""); pins[0].focus(); }
+}
+function showMain() { $("pinCard").classList.add("hidden"); $("main").classList.remove("hidden"); loadList(); }
+
+/* ---------------- GIF decoder (frames with delays, disposal handled) ---------------- */
+function decodeGif(buf) {
+  const b = new Uint8Array(buf);
+  let p = 0;
+  const u16 = () => b[p++] | (b[p++] << 8);
+  if (String.fromCharCode(b[0], b[1], b[2]) != "GIF") throw new Error("not a GIF");
+  p = 6;
+  const W = u16(), H = u16(), f = b[p++];
+  p += 2;
+  let gct = null;
+  if (f & 0x80) { const n = 3 * (1 << ((f & 7) + 1)); gct = b.subarray(p, p + n); p += n; }
+  const canvas = new Uint8ClampedArray(W * H * 4), frames = [];
+  let delay = 100, trans = -1, disposal = 0, prev = null;
+  while (p < b.length) {
+    const c = b[p++];
+    if (c == 0x3B) break;
+    if (c == 0x21) {
+      const label = b[p++];
+      if (label == 0xF9) {
+        p++;
+        const fl = b[p++];
+        delay = u16() * 10;
+        const ti = b[p++];
+        trans = fl & 1 ? ti : -1;
+        disposal = (fl >> 2) & 7;
+        p++;
+      } else { while (b[p]) p += b[p] + 1; p++; }
+      continue;
+    }
+    if (c != 0x2C) break;
+    const x0 = u16(), y0 = u16(), w = u16(), h = u16(), lf = b[p++];
+    let ct = gct;
+    if (lf & 0x80) { const n = 3 * (1 << ((lf & 7) + 1)); ct = b.subarray(p, p + n); p += n; }
+    const inter = lf & 0x40, minCode = b[p++];
+    // gather the data sub-blocks
+    let len = 0, q = p;
+    while (b[q]) { len += b[q]; q += b[q] + 1; }
+    const data = new Uint8Array(len);
+    len = 0;
+    while (b[p]) { data.set(b.subarray(p + 1, p + 1 + b[p]), len); len += b[p]; p += b[p] + 1; }
+    p++;
+    // LZW
+    const px = new Uint8Array(w * h), clear = 1 << minCode, eoi = clear + 1;
+    let size = minCode + 1, mask = (1 << size) - 1, next = eoi + 1, old = -1, bits = 0, acc = 0, o = 0, dp = 0;
+    const pre = new Int32Array(4096), suf = new Uint8Array(4096), stack = new Uint8Array(4097);
+    for (let i = 0; i < clear; i++) suf[i] = i;
+    let first = 0;
+    while (o < px.length) {
+      while (bits < size && dp < data.length) { acc |= data[dp++] << bits; bits += 8; }
+      if (bits < size) break;
+      let code = acc & mask; acc >>= size; bits -= size;
+      if (code == clear) { size = minCode + 1; mask = (1 << size) - 1; next = eoi + 1; old = -1; continue; }
+      if (code == eoi) break;
+      if (old == -1) { px[o++] = suf[code]; old = first = code; continue; }
+      const inCode = code;
+      let sp = 0;
+      if (code >= next) { stack[sp++] = first; code = old; }
+      while (code >= clear) { stack[sp++] = suf[code]; code = pre[code]; }
+      first = suf[code];
+      stack[sp++] = first;
+      while (sp && o < px.length) px[o++] = stack[--sp];
+      if (next < 4096) { pre[next] = old; suf[next] = first; next++; if (!(next & mask) && next < 4096) { size++; mask = (1 << size) - 1; } }
+      old = inCode;
+    }
+    if (disposal == 3) prev = canvas.slice();
+    const rows = [];
+    if (inter) { for (const [s, st] of [[0, 8], [4, 8], [2, 4], [1, 2]]) for (let y = s; y < h; y += st) rows.push(y); }
+    else for (let y = 0; y < h; y++) rows.push(y);
+    for (let r = 0; r < h; r++) {
+      const y = rows[r] + y0;
+      if (y >= H) continue;
+      for (let x = 0; x < w; x++) {
+        const ci = px[r * w + x];
+        if (ci == trans || x + x0 >= W || !ct) continue;
+        const d = (y * W + x + x0) * 4;
+        canvas[d] = ct[ci * 3]; canvas[d + 1] = ct[ci * 3 + 1]; canvas[d + 2] = ct[ci * 3 + 2]; canvas[d + 3] = 255;
+      }
+    }
+    frames.push({data: new ImageData(canvas.slice(), W, H), delay: delay < 20 ? 100 : delay});
+    if (disposal == 2) for (let y = y0; y < y0 + h && y < H; y++) for (let x = x0; x < x0 + w && x < W; x++) canvas.fill(0, (y * W + x) * 4, (y * W + x) * 4 + 4);
+    else if (disposal == 3 && prev) canvas.set(prev);
+    trans = -1; disposal = 0; delay = 100;
+  }
+  return {W, H, frames};
+}
+
+/* ---------------- editor ---------------- */
+const cv = $("cv"), ctx = cv.getContext("2d");
+let src = null, srcW = 0, srcH = 0, kind = "image", gif = null, video = null;
+let view = {s: 1, x: 0, y: 0}, base = 1;
+
+function fit() {
+  base = Math.max(S / srcW, S / srcH);
+  view = {s: base, x: (S - srcW * base) / 2, y: (S - srcH * base) / 2};
+  $("zoom").value = 100;
+}
+function drawTo(c, size, image) {
+  const k = size / S, g = c.getContext("2d");
+  g.fillStyle = "#000";
+  g.fillRect(0, 0, size, size);
+  g.imageSmoothingQuality = "high";
+  g.drawImage(image, view.x * k, view.y * k, srcW * view.s * k, srcH * view.s * k);
+}
+function redraw() { if (src) drawTo(cv, S, src); }
+function clampView() {
+  const w = srcW * view.s, h = srcH * view.s;
+  view.x = Math.min(Math.max(view.x, Math.min(0, S - w)), Math.max(0, S - w));
+  view.y = Math.min(Math.max(view.y, Math.min(0, S - h)), Math.max(0, S - h));
+}
+function setZoom(z, cx = S / 2, cy = S / 2) {
+  const ns = base * z;
+  view.x = cx - (cx - view.x) * ns / view.s;
+  view.y = cy - (cy - view.y) * ns / view.s;
+  view.s = ns;
+  clampView(); redraw();
+}
+$("zoom").oninput = e => setZoom(e.target.value / 100);
+// drag and pinch
+const ptrs = new Map();
+let pinch0 = 0, zoom0 = 1;
+$("stage").addEventListener("pointerdown", e => { $("stage").setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); if (ptrs.size == 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); zoom0 = view.s / base; } });
+$("stage").addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const k = S / $("stage").clientWidth, last = ptrs.get(e.pointerId);
+  ptrs.set(e.pointerId, e);
+  if (ptrs.size == 1) { view.x += (e.clientX - last.clientX) * k; view.y += (e.clientY - last.clientY) * k; clampView(); redraw(); }
+  else if (ptrs.size == 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const z = Math.min(4, Math.max(1, zoom0 * d / pinch0));
+    $("zoom").value = Math.round(z * 100);
+    setZoom(z);
+  }
+});
+["pointerup", "pointercancel"].forEach(n => $("stage").addEventListener(n, e => ptrs.delete(e.pointerId)));
+$("stage").addEventListener("wheel", e => { e.preventDefault(); const z = Math.min(4, Math.max(1, view.s / base * (e.deltaY < 0 ? 1.08 : 0.93))); $("zoom").value = Math.round(z * 100); setZoom(z); }, {passive: false});
+
+function safeName(n) {
+  n = n.replace(/\.[^.]+$/, "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 36) || "media";
+  let c = n, i = 2;
+  while (existing.has(c.toLowerCase())) c = n + "-" + i++;
+  return c;
+}
+
+async function openFile(f) {
+  $("editor").classList.remove("hidden");
+  $("prog").classList.add("hidden");
+  $("send").disabled = $("skip").disabled = false;
+  $("edTitle").textContent = f.name;
+  $("edCount").textContent = files.length > 1 ? t("of", fileIdx + 1, files.length) : "";
+  $("name").value = safeName(f.name);
+  $("vidOpts").classList.add("hidden");
+  gif = null; video = null;
+  try {
+    if (f.type == "image/gif" || /\.gif$/i.test(f.name)) {
+      kind = "gif";
+      gif = decodeGif(await f.arrayBuffer());
+      const c = document.createElement("canvas");
+      c.width = gif.W; c.height = gif.H;
+      c.getContext("2d").putImageData(gif.frames[0].data, 0, 0);
+      src = c; srcW = gif.W; srcH = gif.H;
+      if (gif.frames.length == 1) kind = "image";
+    } else if (f.type.startsWith("video") || /\.(mp4|mov|m4v|webm)$/i.test(f.name)) {
+      kind = "video";
+      video = document.createElement("video");
+      video.muted = true; video.playsInline = true; video.preload = "auto";
+      video.src = URL.createObjectURL(f);
+      await new Promise((r, j) => { video.onloadeddata = r; video.onerror = j; });
+      try { await video.play(); video.pause(); } catch (e) {}
+      await seek(0);
+      src = video; srcW = video.videoWidth; srcH = video.videoHeight;
+      $("vidOpts").classList.remove("hidden");
+      $("start").max = Math.max(0, video.duration - 1).toFixed(1);
+      $("start").value = 0;
+      $("len").max = Math.max(1, Math.min(60, Math.floor(video.duration)));
+      $("len").value = Math.min(10, $("len").max);
+      updVid();
+    } else {
+      kind = "image";
+      const bmp = await createImageBitmap(f);
+      src = bmp; srcW = bmp.width; srcH = bmp.height;
+    }
+  } catch (e) { alert(t("unsupported") + "\n" + f.name); return nextFile(); }
+  fit(); redraw();
+}
+function seek(tm) { return new Promise(r => { if (Math.abs(video.currentTime - tm) < 0.001) return r(); video.onseeked = () => r(); video.currentTime = tm; }); }
+function updVid() {
+  $("startV").textContent = (+$("start").value).toFixed(1) + " s";
+  $("lenV").textContent = $("len").value + " s";
+}
+$("start").oninput = async () => { updVid(); await seek(+$("start").value); redraw(); };
+$("len").oninput = updVid;
+
+function toJpeg(c, q) { return new Promise(r => c.toBlob(b => r(b), "image/jpeg", q)); }
+function progress(f, txt) { $("prog").classList.remove("hidden"); $("barIn").style.width = (f * 100).toFixed(1) + "%"; $("progT").textContent = txt; }
+
+function buildAmj(jpegs, delays) {
+  const n = jpegs.length, head = 16 + n * 12, hb = new DataView(new ArrayBuffer(head));
+  [65, 77, 74, 49].forEach((c, i) => hb.setUint8(i, c));   // "AMJ1"
+  hb.setUint16(4, S, true); hb.setUint16(6, S, true); hb.setUint32(8, n, true); hb.setUint32(12, 0, true);
+  let off = head;
+  for (let i = 0; i < n; i++) {
+    hb.setUint32(16 + i * 12, off, true); hb.setUint32(20 + i * 12, jpegs[i].size, true); hb.setUint32(24 + i * 12, delays[i], true);
+    off += jpegs[i].size;
+  }
+  return new Blob([hb.buffer, ...jpegs], {type: "application/octet-stream"});
+}
+
+async function send() {
+  $("send").disabled = $("skip").disabled = true;
+  const name = safeName($("name").value || "media");
+  const out = document.createElement("canvas"); out.width = out.height = S;
+  const th = document.createElement("canvas"); th.width = th.height = TH;
+  let media, file;
+  try {
+    if (kind == "image") {
+      drawTo(out, S, src);
+      drawTo(th, TH, src);
+      media = await toJpeg(out, 0.88);
+      file = name + ".jpg";
+    } else {
+      const jpegs = [], delays = [], q = kind == "gif" ? 0.8 : +$("q").value;
+      if (kind == "gif") {
+        const c = document.createElement("canvas"); c.width = gif.W; c.height = gif.H;
+        const g = c.getContext("2d");
+        for (let i = 0; i < gif.frames.length; i++) {
+          progress(i / gif.frames.length * 0.5, t("converting", i + 1, gif.frames.length));
+          g.putImageData(gif.frames[i].data, 0, 0);
+          drawTo(out, S, c);
+          if (!i) drawTo(th, TH, c);
+          jpegs.push(await toJpeg(out, q)); delays.push(gif.frames[i].delay);
+        }
+      } else {
+        const fps = +$("fps").value, t0 = +$("start").value, len = Math.min(+$("len").value, video.duration - t0);
+        const n = Math.max(1, Math.floor(len * fps)), dly = Math.round(1000 / fps);
+        for (let i = 0; i < n; i++) {
+          progress(i / n * 0.5, t("converting", i + 1, n));
+          await seek(t0 + i / fps);
+          drawTo(out, S, video);
+          if (!i) drawTo(th, TH, video);
+          jpegs.push(await toJpeg(out, q)); delays.push(dly);
+        }
+      }
+      media = buildAmj(jpegs, delays);
+      file = name + ".amj";
+    }
+    if (info.free && media.size + 2e6 > info.free) throw new Error(t("tooBig"));
+    const thumb = await toJpeg(th, 0.82);
+    await upload(file, "thumb", thumb);
+    await upload(file, "media", media, f => progress(0.5 + f * 0.5, t("sending", Math.round(f * 100))));
+    progress(1, t("done"));
+    existing.add(name.toLowerCase());
+    loadList(); loadInfo();
+    setTimeout(nextFile, 700);
+  } catch (e) {
+    progress(0, t("failed", e.message));
+    $("send").disabled = $("skip").disabled = false;
+  }
+}
+function nextFile() {
+  fileIdx++;
+  if (fileIdx < files.length) openFile(files[fileIdx]);
+  else { $("editor").classList.add("hidden"); files = []; $("file").value = ""; }
+}
+$("pick").onclick = () => $("file").click();
+$("file").onchange = e => { files = [...e.target.files]; fileIdx = 0; if (files.length) openFile(files[0]); };
+$("send").onclick = send;
+$("skip").onclick = nextFile;
+
+loadInfo().catch(() => {});
+if (PIN) api("/api/auth", {method: "POST"}).then(r => r.ok ? showMain() : pins[0].focus());
+else pins[0].focus();
+</script>
+</body>
+</html>

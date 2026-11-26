@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AmuletOS Wi-Fi</title>
+<style>
+:root{--bg:#0a0908;--card:#151412;--line:#2a2723;--text:#f4f1ea;--dim:#8c877d;--acc:#e9c46a;--ok:#6be39a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;padding:20px 16px 50px;max-width:480px;margin:auto}
+h1{font-size:1.4rem;margin:0 0 4px;font-weight:600}
+p{color:var(--dim);margin:0 0 18px}
+.net{display:flex;justify-content:space-between;align-items:center;width:100%;padding:14px 16px;margin:0 0 8px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:14px;font:inherit;text-align:left;cursor:pointer}
+.net.sel{border-color:var(--acc)}
+.net small{color:var(--dim)}
+label{display:block;margin:18px 0 6px;color:var(--dim)}
+input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:#0f0e0c;color:var(--text);font:inherit}
+button.go{margin-top:18px;width:100%;padding:15px;border:0;border-radius:14px;background:var(--acc);color:#1a1405;font:600 1rem system-ui}
+.ok{color:var(--ok);margin-top:16px}
+</style>
+</head>
+<body>
+<h1 data-t="title"></h1>
+<p data-t="sub"></p>
+<div id="nets"></div>
+<label data-t="ssid"></label><input id="ssid" autocomplete="off" autocapitalize="none">
+<label data-t="pass"></label><input id="pass" type="password" autocomplete="off" autocapitalize="none">
+<button class="go" id="go" data-t="save"></button>
+<div class="ok" id="msg"></div>
+<script>
+"use strict";
+const IT = (navigator.language || "").toLowerCase().startsWith("it");
+const TX = {
+  title: ["Pendant Wi-Fi", "Wi-Fi del ciondolo"],
+  sub: ["Pick your home network: the pendant uses it for updates, the clock and uploads.", "Scegli la rete di casa: il ciondolo la usa per gli aggiornamenti, l'ora e il caricamento dei media."],
+  ssid: ["Network", "Rete"], pass: ["Password", "Password"], save: ["Connect", "Collega"],
+  sent: ["Done: the pendant is connecting to %s. You can close this page and go back to your usual Wi-Fi.", "Fatto: il ciondolo si sta collegando a %s. Puoi chiudere la pagina e tornare alla tua rete."],
+  open: ["open", "aperta"],
+};
+const t = (k, a) => TX[k][IT ? 1 : 0].replace("%s", a);
+document.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+const $ = id => document.getElementById(id);
+function bars(r) { return r > -55 ? "••••" : r > -65 ? "•••" : r > -75 ? "••" : "•"; }
+async function scan() {
+  try {
+    const l = await (await fetch("/api/scan")).json();
+    const box = $("nets");
+    box.innerHTML = "";
+    for (const n of l) {
+      const b = document.createElement("button");
+      b.className = "net" + (n.s == $("ssid").value ? " sel" : "");
+      const name = document.createElement("span");
+      name.textContent = n.s;
+      const info = document.createElement("small");
+      info.textContent = (n.l ? "🔒 " : t("open") + " ") + bars(n.r);
+      b.append(name, info);
+      b.onclick = () => { $("ssid").value = n.s; $("pass").focus(); scan(); };
+      box.append(b);
+    }
+  } catch (e) {}
+}
+$("go").onclick = async () => {
+  const s = $("ssid").value.trim();
+  if (!s) return $("ssid").focus();
+  const body = "s=" + encodeURIComponent(s) + "&p=" + encodeURIComponent($("pass").value);
+  const r = await fetch("/api/wifi", {method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body});
+  if (r.ok) $("msg").textContent = t("sent", s);
+};
+scan();
+setInterval(scan, 5000);
+</script>
+</body>
+</html>
