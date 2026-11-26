@@ -5,6 +5,12 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Dice app for D&D: d4 to d100 on the bezel, up to 20 dice, modifier, advantage /
+  disadvantage, natural 20 / natural 1 highlighted, tap or shake to roll, saved rolls,
+  history of the last 30 rolls, ability scores (4d6 drop the lowest, with modifiers).
+
+## 0.1.3
+
 First version of AmuletOS.
 
 - Launcher for the round screen: apps on a ring along the edge, turned with a virtual bezel.

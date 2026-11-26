@@ -1,6 +1,7 @@
 // core.c - see core.h
 #include "core.h"
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -135,4 +136,85 @@ int shuffle_next(int cur, int count, uint32_t *seed)
     *seed = *seed * 1664525u + 1013904223u;
     int n = (int)((*seed >> 8) % (uint32_t)(count - 1));
     return n >= cur ? n + 1 : n;
+}
+
+/* ---------------- dice ---------------- */
+
+dice_spec_t dice_clamp(dice_spec_t s)
+{
+    if (s.count < 1) s.count = 1;
+    if (s.count > DICE_MAX) s.count = DICE_MAX;
+    if (s.sides < 2) s.sides = 2;
+    if (s.sides > 100) s.sides = 100;
+    if (s.mod < -99) s.mod = -99;
+    if (s.mod > 99) s.mod = 99;
+    if (s.mode > DICE_DIS) s.mode = DICE_NORMAL;
+    if (s.drop_lowest >= s.count) s.drop_lowest = 0;
+    return s;
+}
+
+int dice_one(int sides, dice_rng_t rng, void *ctx)
+{
+    // reject the top values that would make some faces more likely
+    uint32_t limit = UINT32_MAX - (UINT32_MAX % (uint32_t)sides);
+    uint32_t v;
+    do v = rng(ctx); while (v >= limit);
+    return (int)(v % (uint32_t)sides) + 1;
+}
+
+void dice_roll(const dice_spec_t *sp, dice_rng_t rng, void *ctx, dice_result_t *r)
+{
+    dice_spec_t s = dice_clamp(*sp);
+    memset(r, 0, sizeof(*r));
+    bool pair = s.mode != DICE_NORMAL;
+    for (int i = 0; i < s.count; i++) {
+        int a = dice_one(s.sides, rng, ctx);
+        r->val[r->n] = (uint8_t)a;
+        r->kept[r->n++] = 1;
+        if (pair) {
+            int b = dice_one(s.sides, rng, ctx);
+            bool keep_b = s.mode == DICE_ADV ? b > a : b < a;
+            r->val[r->n] = (uint8_t)b;
+            r->kept[r->n] = keep_b;
+            if (keep_b) r->kept[r->n - 1] = 0;
+            r->n++;
+        }
+    }
+    // drop the lowest kept dice
+    for (int d = 0; d < s.drop_lowest; d++) {
+        int lo = -1;
+        for (int i = 0; i < r->n; i++)
+            if (r->kept[i] && (lo < 0 || r->val[i] < r->val[lo])) lo = i;
+        if (lo >= 0) r->kept[lo] = 0;
+    }
+    r->total = s.mod;
+    for (int i = 0; i < r->n; i++) {
+        if (!r->kept[i]) continue;
+        r->total += r->val[i];
+        if (s.sides == 20 && r->val[i] == 20) r->crit = true;
+        if (s.sides == 20 && r->val[i] == 1) r->fumble = true;
+    }
+    if (r->crit) r->fumble = false;   // a 20 among the kept dice wins
+}
+
+void dice_format(const dice_spec_t *sp, char *b, size_t n)
+{
+    dice_spec_t s = dice_clamp(*sp);
+    int o = s.count > 1 ? snprintf(b, n, "%dd%d", s.count, s.sides) : snprintf(b, n, "d%d", s.sides);
+    if (s.drop_lowest && o >= 0 && (size_t)o < n) o += snprintf(b + o, n - o, "kh%d", s.count - s.drop_lowest);
+    if (s.mod && o >= 0 && (size_t)o < n) snprintf(b + o, n - o, "%+d", s.mod);
+}
+
+void dice_breakdown(const dice_result_t *r, char *b, size_t n)
+{
+    size_t o = 0;
+    b[0] = 0;
+    for (int i = 0; i < r->n && o + 8 < n; i++)
+        o += snprintf(b + o, n - o, r->kept[i] ? "%s%d" : "%s(%d)", i ? " " : "", r->val[i]);
+}
+
+int dice_ability_mod(int score)
+{
+    int d = score - 10;
+    return d >= 0 ? d / 2 : -((-d + 1) / 2);
 }

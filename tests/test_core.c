@@ -84,8 +84,88 @@ static void test_misc(void)
     CHECK(shuffle_next(0, 1, &seed) == 0);
 }
 
+/* ---- dice ---- */
+typedef struct { const uint32_t *v; int n, i; } seq_t;   // fixed sequence of "random" words
+static uint32_t seq_rng(void *c) { seq_t *s = c; return s->v[s->i++ % s->n]; }
+static uint32_t lcg_rng(void *c) { uint32_t *x = c; *x = *x * 1664525u + 1013904223u; return *x; }
+
+static void test_dice(void)
+{
+    // dice_one: value % sides + 1, and the biased top range is rejected
+    uint32_t v1[] = {0, 19, 20, UINT32_MAX, 5};
+    seq_t q = {v1, 5, 0};
+    CHECK(dice_one(20, seq_rng, &q) == 1);
+    CHECK(dice_one(20, seq_rng, &q) == 20);
+    CHECK(dice_one(20, seq_rng, &q) == 1);
+    CHECK(dice_one(20, seq_rng, &q) == 6);   // UINT32_MAX skipped, then 5 -> 6
+    // fairness: 120000 d6 rolls, every face 20000 +- 3 %
+    uint32_t x = 7;
+    int hist[7] = {0};
+    for (int i = 0; i < 120000; i++) hist[dice_one(6, lcg_rng, &x)]++;
+    for (int f = 1; f <= 6; f++) CHECK(hist[f] > 19400 && hist[f] < 20600);
+
+    dice_result_t r;
+    // advantage keeps the higher, disadvantage the lower
+    uint32_t v2[] = {4, 16};   // -> 5 and 17
+    seq_t a = {v2, 2, 0};
+    dice_spec_t s = {1, 20, 2, DICE_ADV, 0};
+    dice_roll(&s, seq_rng, &a, &r);
+    CHECK(r.n == 2 && r.val[0] == 5 && r.val[1] == 17 && !r.kept[0] && r.kept[1] && r.total == 19);
+    a.i = 0;
+    s.mode = DICE_DIS;
+    dice_roll(&s, seq_rng, &a, &r);
+    CHECK(r.kept[0] && !r.kept[1] && r.total == 7);
+    // natural 20 / natural 1
+    uint32_t v3[] = {19};
+    seq_t c = {v3, 1, 0};
+    s = (dice_spec_t){1, 20, -5, DICE_NORMAL, 0};
+    dice_roll(&s, seq_rng, &c, &r);
+    CHECK(r.crit && !r.fumble && r.total == 15);
+    uint32_t v4[] = {0};
+    seq_t f = {v4, 1, 0};
+    dice_roll(&s, seq_rng, &f, &r);
+    CHECK(r.fumble && !r.crit && r.total == -4);
+    // a d6 showing 1 or 6 is no crit
+    s.sides = 6;
+    f.i = 0;
+    dice_roll(&s, seq_rng, &f, &r);
+    CHECK(!r.fumble && !r.crit);
+    // 4d6 drop the lowest
+    uint32_t v5[] = {2, 0, 5, 3};   // 3 1 6 4 -> 13
+    seq_t d = {v5, 4, 0};
+    s = (dice_spec_t){4, 6, 0, DICE_NORMAL, 1};
+    dice_roll(&s, seq_rng, &d, &r);
+    CHECK(r.total == 13 && !r.kept[1] && r.kept[0] && r.kept[2] && r.kept[3]);
+    char b[64];
+    dice_breakdown(&r, b, sizeof(b));
+    CHECK(!strcmp(b, "3 (1) 6 4"));
+    dice_format(&s, b, sizeof(b));
+    CHECK(!strcmp(b, "4d6kh3"));
+    s = (dice_spec_t){2, 20, 3, 0, 0};
+    dice_format(&s, b, sizeof(b));
+    CHECK(!strcmp(b, "2d20+3"));
+    s = (dice_spec_t){1, 100, -1, 0, 0};
+    dice_format(&s, b, sizeof(b));
+    CHECK(!strcmp(b, "d100-1"));
+    // clamping and the biggest roll
+    s = dice_clamp((dice_spec_t){0, 1, 0, 9, 3});
+    CHECK(s.count == 1 && s.sides == 2 && s.mode == 0 && s.drop_lowest == 0);
+    s = (dice_spec_t){50, 20, 0, DICE_ADV, 0};
+    x = 3;
+    dice_roll(&s, lcg_rng, &x, &r);
+    CHECK(r.n == 2 * DICE_MAX);
+    int kept = 0;
+    for (int i = 0; i < r.n; i++) kept += r.kept[i];
+    CHECK(kept == DICE_MAX && r.total >= 20 && r.total <= 400);
+    dice_breakdown(&r, b, 16);   // short buffer: stays terminated
+    CHECK(strlen(b) < 16);
+    CHECK(dice_ability_mod(10) == 0 && dice_ability_mod(18) == 4 && dice_ability_mod(9) == -1 &&
+          dice_ability_mod(8) == -1 && dice_ability_mod(3) == -4 && dice_ability_mod(20) == 5);
+}
+
 int main(void)
 {
+    test_dice();
     test_kind();
     test_amj();
     test_name();

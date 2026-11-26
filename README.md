@@ -114,11 +114,34 @@ from here*). Settings › Pendant:
 - **Pendant**: pendant mode with the last setup.
 - **Gallery**: round previews of the media on the card.
 - **Upload**: QR code, address and PIN of the upload page (the server only runs while it is open).
+- **Dice**: tabletop dice for D&D, see below.
 - **Clock**: time from the internet (NTP), kept by the RTC.
 - **Settings**: Wi-Fi, screen (brightness, rotation 0/90/180/270 for how the board sits in the
   case, accent colour, auto off), pendant, night, updates, language (Italian / English), time
   zone, system.
 - **Info**: battery, power, microSD, network, firmware, memory.
+
+## Dice
+
+<p>
+<img src="docs/img/dice.png" width="200" alt="Dice">
+<img src="docs/img/dice_stats.png" width="200" alt="Ability scores">
+</p>
+
+| Gesture | Action |
+|---|---|
+| Tap / shake the pendant | roll (the die tumbles, then lands) |
+| Bezel, or tap a die on the lower edge | d4, d6, d8, d10, d12, d20, d100 |
+| Swipe up / down | more / fewer dice (1 to 20) |
+| Swipe left | normal → advantage → disadvantage (d20: roll twice, keep the higher / lower) |
+| Long press | options |
+
+A natural 20 turns gold, a natural 1 red. With several dice (or advantage) the single dice are
+listed under the total, discarded ones in brackets. Options: number of dice, modifier (−20 to
++30), roll mode, **saved rolls** (up to 6, e.g. "8d6" for a fireball), **ability scores**
+(4d6 drop the lowest, six times, with the D&D modifiers; tap to roll again), **history** of the
+last 30 rolls, shake to roll on/off. Rolls use the ESP32's hardware random generator without
+modulo bias.
 
 ## Media formats
 

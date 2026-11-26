@@ -27,7 +27,7 @@ ev_handler_t sim_handler;
 /* ---- esp ---- */
 void esp_restart(void) { printf("esp_restart\n"); }
 int64_t esp_timer_get_time(void) { return sim_now_us; }
-uint32_t esp_random(void) { return 4821; }
+uint32_t esp_random(void) { static uint32_t x = 12345; x = x * 1664525u + 1013904223u; return x; }
 
 /* ---- board ---- */
 float board_battery_volts(void) { return 3.95f; }

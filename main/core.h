@@ -47,3 +47,38 @@ bool night_active(int hour, int from_h, int to_h);
 bool query_param(const char *query, const char *key, char *out, size_t n);
 // next index of a shuffled slideshow (never the current one when count > 1)
 int  shuffle_next(int cur, int count, uint32_t *seed);
+
+/* ---- dice ----
+ * A roll: count dice with `sides` faces, plus a modifier. Advantage / disadvantage roll every
+ * die twice and keep the higher / lower one (for 1d20 it is the D&D rule). drop_lowest drops
+ * that many of the lowest kept dice (ability scores: 4d6, drop the lowest). */
+#define DICE_MAX 20
+enum { DICE_NORMAL = 0, DICE_ADV, DICE_DIS };
+
+typedef struct {
+    uint8_t count;        // 1..DICE_MAX
+    uint8_t sides;        // 2..100
+    int8_t  mod;          // -99..99
+    uint8_t mode;         // DICE_NORMAL / DICE_ADV / DICE_DIS
+    uint8_t drop_lowest;  // < count
+} dice_spec_t;
+
+typedef struct {
+    uint8_t n;                       // dice in val[] (count, or 2 x count with adv/dis)
+    uint8_t val[DICE_MAX * 2];
+    uint8_t kept[DICE_MAX * 2];      // 1 = counts in the total
+    int     total;
+    bool    crit, fumble;            // d20: a kept natural 20 / natural 1
+} dice_result_t;
+
+typedef uint32_t (*dice_rng_t)(void *ctx);   // 32 random bits
+
+dice_spec_t dice_clamp(dice_spec_t s);
+// uniform 1..sides without modulo bias
+int  dice_one(int sides, dice_rng_t rng, void *ctx);
+void dice_roll(const dice_spec_t *s, dice_rng_t rng, void *ctx, dice_result_t *r);
+// "2d20+3", "d20 ADV" style is up to the UI: this writes "2d20+3" / "d100" / "4d6-1"
+void dice_format(const dice_spec_t *s, char *buf, size_t n);
+// the kept / dropped dice as text: "14 9" with dropped ones in parentheses: "14 (9)"
+void dice_breakdown(const dice_result_t *r, char *buf, size_t n);
+int  dice_ability_mod(int score);   // D&D: (score - 10) / 2, rounded down

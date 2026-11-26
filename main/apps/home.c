@@ -15,6 +15,7 @@ static const app_t apps[] = {
     {IC_GEM, S_APP_PENDANT, NULL},
     {IC_IMAGE, S_APP_GALLERY, &scr_gallery},
     {IC_UPLOAD, S_APP_UPLOAD, &scr_upload},
+    {IC_DICE_D20, S_APP_DICE, &scr_dice},
     {IC_CLOCK, S_APP_CLOCK, &scr_clock},
     {IC_COG, S_APP_SETTINGS, &scr_settings},
     {IC_INFO, S_APP_INFO, &scr_info},
@@ -72,13 +73,19 @@ static void sub_text(char *b, int n)
         else snprintf(b, n, "%s", T(S_VIA_HOTSPOT));
         break;
     case 3: {
+        char e[24];
+        dice_format(&g_set.dice, e, sizeof(e));
+        snprintf(b, n, "%s", e);
+        break;
+    }
+    case 4: {
         time_t t = time(NULL);
         struct tm lt;
         localtime_r(&t, &lt);
         if (t > 1735689600) strftime(b, n, "%d.%m.%Y", &lt);
         break;
     }
-    case 5: ui_battery_icon(b, n); break;
+    case 6: ui_battery_icon(b, n); break;
     default: break;
     }
 }
