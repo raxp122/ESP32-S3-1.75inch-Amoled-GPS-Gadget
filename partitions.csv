@@ -1,0 +1,10 @@
+# Name,   Type, SubType, Offset,   Size
+# Two app slots for OTA updates. The settings (nvs) sit at the very end of the flash, where
+# neither the USB image (amulet.bin) nor an OTA update ever writes. "spare" is unused for now
+# (room for later: maps, fonts...). Do not change this table without a plan for the settings.
+otadata,  data, ota,     0xf000,   0x2000
+phy_init, data, phy,     0x11000,  0x1000
+ota_0,    app,  ota_0,   0x20000,  0x600000
+ota_1,    app,  ota_1,   0x620000, 0x600000
+spare,    data, fat,     0xC20000, 0x3D0000
+nvs,      data, nvs,     0xFF0000, 0x10000

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AmuletOS Installer</title>
+<style>
+:root{--bg:#0a0908;--card:#151412;--line:#2a2723;--text:#f4f1ea;--dim:#8c877d;--acc:#e9c46a;--warn:#ff6b57}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:2.5rem 1.25rem 4rem}
+h1{font-size:2rem;margin:0;display:flex;gap:.6rem;align-items:center;font-weight:600}
+h1 i{width:34px;height:34px;border-radius:50%;border:2px solid var(--acc);position:relative;display:inline-block}
+h1 i:after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--acc)}
+.ver{display:inline-block;margin:.6rem 0 1.2rem;padding:.25rem .8rem;border:1px solid var(--line);border-radius:999px;color:var(--dim);font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1.2rem 1.4rem;margin:1rem 0}
+.card h2{font-size:1.1rem;margin:0 0 .4rem}
+p,li{color:#d8d3c8}
+.note{color:var(--dim);font-size:.9rem}
+button{font:600 1rem system-ui;padding:.85rem 1.3rem;border-radius:14px;border:0;background:var(--acc);color:#1a1405;cursor:pointer}
+.bad{color:var(--warn);font-weight:600}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><i></i>AmuletOS</h1>
+  <span class="ver">Firmware __VERSION__ · Waveshare ESP32-S3-Touch-AMOLED-1.75</span>
+  <p>A pendant for photos, GIFs and videos on the round AMOLED screen. This page installs the
+    firmware over USB the first time; after that the pendant updates itself over Wi-Fi.</p>
+
+  <div class="card">
+    <h2>1 · Install</h2>
+    <p>Use desktop <b>Chrome</b> or <b>Edge</b>. Connect the board with a USB data cable, press the
+      button and pick the board's serial port ("USB JTAG/serial debug unit").</p>
+    <esp-web-install-button manifest="manifest.json?v=__VERSION__">
+      <button slot="activate">Connect &amp; install AmuletOS</button>
+      <span slot="unsupported" class="bad">This browser cannot talk to USB devices: use desktop Chrome or Edge.</span>
+      <span slot="not-allowed" class="bad">This page needs HTTPS.</span>
+    </esp-web-install-button>
+    <p class="note">Updating an AmuletOS board? Leave <b>Erase device</b> unchecked: settings and Wi-Fi
+      are kept. Photos and videos are on the microSD and are never touched.</p>
+    <p class="note">The board is not found? Try another cable (many only charge). If it still does not
+      show up, hold <b>BOOT</b>, press and release <b>PWR</b> (or plug the cable in), release BOOT.</p>
+  </div>
+
+  <div class="card">
+    <h2>2 · First start</h2>
+    <ol>
+      <li>Insert a microSD card formatted <b>FAT32</b>.</li>
+      <li>On the pendant: Settings › Wi-Fi › <b>From your phone</b>, scan the QR code and pick your network.</li>
+      <li>Open <b>Upload</b> and scan its QR code with the phone: choose photos, GIFs or videos,
+        crop them to the circle and send them.</li>
+      <li>Press <b>BOOT</b> on the home screen to wear it: pendant mode.</li>
+    </ol>
+  </div>
+  <p class="note"><a href="https://github.com/raxp122/ESP32-S3-1.75inch-Amoled-GPS-Gadget">Source code, guide and changelog on GitHub</a></p>
+</div>
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+</body>
+</html>

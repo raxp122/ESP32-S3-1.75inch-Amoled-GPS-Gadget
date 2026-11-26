@@ -1,0 +1,114 @@
+name: Build
+
+# Builds the firmware on every push and pull request. A push to main also publishes:
+#   - a GitHub release (version.json + amulet-app.bin): the pendant updates itself from it (OTA)
+#   - the web installer on GitHub Pages (first flash over USB from the browser)
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # the release
+  pages: write      # the web installer
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.v }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: ver
+        run: |
+          v="0.1.${{ github.run_number }}"
+          echo "$v" > version.txt          # ESP-IDF takes it as the firmware version
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Native tests
+        run: make -C tests CC=gcc
+
+      - name: Components (LVGL, esp_new_jpeg)
+        run: sh tools/fetch_deps.sh
+
+      - name: Build (ESP-IDF 5.4.2) and merge the USB image
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.4.2
+          target: esp32s3
+          command: >-
+            idf.py set-target esp32s3 &&
+            idf.py build &&
+            esptool.py --chip esp32s3 merge_bin -o amulet.bin
+            --flash_mode dio --flash_size 16MB
+            0x0 build/bootloader/bootloader.bin
+            0x8000 build/partition_table/partition-table.bin
+            0xf000 build/ota_data_initial.bin
+            0x20000 build/amuletos.bin
+
+      - name: Release files
+        run: |
+          sudo chown -R "$(id -u)" build . || true
+          cp build/amuletos.bin amulet-app.bin
+          echo "{\"version\":\"${{ steps.ver.outputs.v }}\"}" > version.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: amuletos-firmware
+          if-no-files-found: error
+          path: |
+            amulet.bin
+            amulet-app.bin
+            version.json
+
+      - name: Publish the release (main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: AmuletOS ${{ steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          make_latest: "true"
+          body: |
+            AmuletOS ${{ steps.ver.outputs.v }} — see CHANGELOG.md.
+
+            - **On the pendant (OTA):** Settings › Updates › Firmware.
+            - **USB, first install:** the web installer (GitHub Pages of this repository), or `amulet.bin` at `0x0`.
+            - **USB, app only:** `amulet-app.bin` at `0x20000`.
+
+            Settings live at the end of the flash and media on the microSD: none of these files erase them.
+          files: |
+            amulet.bin
+            amulet-app.bin
+            version.json
+
+      - name: Web installer site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p site
+          cp amulet.bin site/
+          sed "s/__VERSION__/${{ steps.ver.outputs.v }}/g" web/index.html > site/index.html
+          sed "s/__VERSION__/${{ steps.ver.outputs.v }}/g" web/manifest.json > site/manifest.json
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  pages:
+    # Once: Settings › Pages › Source = "GitHub Actions". Until then this job fails on its own
+    # without blocking the release.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

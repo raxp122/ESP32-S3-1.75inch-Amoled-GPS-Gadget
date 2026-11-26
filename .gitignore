@@ -1,0 +1,12 @@
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+version.txt
+# fetched by tools/fetch_deps.sh (and by the CI)
+components/lvgl/
+components/esp_new_jpeg/
+tools/sim/obj/
+tools/sim/out/
+tests/test_core
