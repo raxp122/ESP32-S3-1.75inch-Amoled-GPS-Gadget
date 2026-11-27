@@ -19,11 +19,13 @@ What AmuletOS may get next. Nothing here is promised; the order is decided one a
   poison), the circle split in sectors.
 - **Bubble level**: like the other gadget, a tap calibrates; flat side only (one face).
 
-- **Calendar** (offline, no account for now): days, weeks, Italian national holidays (fixed ones
-  plus Easter and Easter Monday computed), name day of the saint, day of the year, ISO week,
-  days until a date or the next holiday. A view made for the circle, e.g. the days of the month
-  as a ring along the rim with the bezel as a cursor and the details in the middle, a rolling
-  drum of days, and a year ring (the "wheel of the year" idea below).
+- **Calendar** (offline, no account for now): weekday, ISO week, day of the year, days until a
+  date, and whether a day is a national non-working day (marked only as "holiday", no names of
+  saints or religious notes). Three concentric rings: days outside, months in the middle,
+  years inside, the selected values in a window at 12 o'clock. The bezel turns the active ring;
+  when the days pass the end of a month the months ring clicks on too (and the years ring at
+  the end of the year). A swipe changes the active ring: days, months, years, days again. The
+  date is in the middle; a tap opens the day page. Mockups in `docs/mockups/calendar_4*.png`.
 
 ## Later (needs the GPS)
 
