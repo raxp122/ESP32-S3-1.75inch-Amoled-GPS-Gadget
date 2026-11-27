@@ -178,7 +178,8 @@ Made for a small cell (default 500 mAh, set the real capacity in Settings › Ba
   while on USB, restarts the gauge for the new cell.
 - **Clock always on** (Settings › Screen, on by default): the clock app keeps the screen on, mostly
   black so it costs little; untouched it dims, stops the seconds ring and pauses the Wi-Fi. The
-  digits move a few pixels every minute so they do not burn into the panel.
+  digits move a few pixels every minute so they do not burn into the panel. Touch only brings
+  it back to full brightness (no swipe back): BOOT leaves the clock.
 
 What uses most is the screen itself (brightness and how much of the picture is lit: black is
 free on an AMOLED) and animations, which decode JPEG frames all the time.

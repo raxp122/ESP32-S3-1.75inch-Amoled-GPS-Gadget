@@ -14,7 +14,8 @@ number of the published release (`0.1.<build>`).
 - Clock: stays on (Settings › Screen › Clock always on, on by default). Untouched for the
   auto-off time it dims to a third of the brightness (a sixth at night), the seconds ring stops
   and the Wi-Fi sleeps; a touch or a button brings it back. A night window set to "screen off"
-  still turns it off. The text moves a few pixels every minute against burn-in.
+  still turns it off. The text moves a few pixels every minute against burn-in. Touch only
+  wakes it from the dimmed state (no swipe back, no quick panel): BOOT leaves.
 
 - Battery: when the PMU fuel gauge is far from the voltage (a new battery it has not learned
   yet showed 0 % at 4.09 V) the percentage comes from the voltage; warnings and the

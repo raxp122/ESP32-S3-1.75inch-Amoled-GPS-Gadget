@@ -1,7 +1,8 @@
 // clock.c - a quiet watch face: thin digits, the date, seconds as a ring along the edge.
 // With "Clock always on" the screen stays on (almost all black: an AMOLED spends very little on
 // it); untouched for the auto-off time it dims, the seconds ring stops and the Wi-Fi sleeps.
-// The text moves a few pixels every minute so it does not burn into the panel.
+// The text moves a few pixels every minute so it does not burn into the panel. Touch does not
+// navigate here (no swipe back, no quick panel): BOOT leaves.
 #include "ui.h"
 #include "power.h"
 #include "settings.h"
@@ -98,4 +99,8 @@ static void leave(void)
 
 static void tick(void) { update(); }
 
-const screen_t scr_clock = {"clock", enter, leave, NULL, tick, SCR_NO_STATUS};
+// worn on the chest the screen gets brushed: touch only wakes it from the dimmed state (any
+// touch resets the idle time), BOOT goes back
+static bool event(ev_t e, int x, int y) { return e != EV_BOOT_CLICK && e != EV_BOOT_LONG; }
+
+const screen_t scr_clock = {"clock", enter, leave, event, tick, SCR_NO_STATUS | SCR_NO_PULL};
