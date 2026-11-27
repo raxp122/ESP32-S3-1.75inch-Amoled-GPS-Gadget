@@ -137,6 +137,14 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_BATT_CARE] = {"Carica fino al 90%", "Charge to 90%"},
     [S_POWER_SAVE] = {"Risparmio energetico", "Power saving"},
     [S_WIFI_SAVE] = {"Wi-Fi solo quando serve", "Wi-Fi only when needed"},
+    [S_DICE_DH] = {"Daggerheart", "Daggerheart"},
+    [S_DICE_DH_ADV] = {"Daggerheart, vantaggio +d6", "Daggerheart, advantage +d6"},
+    [S_DICE_DH_DIS] = {"Daggerheart, svantaggio -d6", "Daggerheart, disadvantage -d6"},
+    [S_DH_HOPE] = {"Speranza", "Hope"},
+    [S_DH_FEAR] = {"Paura", "Fear"},
+    [S_DH_WITH_HOPE] = {"con Speranza", "with Hope"},
+    [S_DH_WITH_FEAR] = {"con Paura", "with Fear"},
+    [S_DH_CRIT] = {"CRITICO!", "CRITICAL!"},
 };
 
 const char *T(int id)

@@ -138,11 +138,16 @@ app that half of the circle stays empty).
 
 | Gesture | Action |
 |---|---|
-| Tap / shake the pendant | roll (the die tumbles, then lands) |
-| Bezel (the selection follows the finger along the lower edge), or tap a die there | d4, d6, d8, d10, d12, d20, d100 |
-| Swipe up / down | more / fewer dice (1 to 20) |
-| Swipe left | normal → advantage → disadvantage (d20: roll twice, keep the higher / lower) |
+| Tap / shake the pendant | roll (the die rattles, then lands) |
+| Swipe left / right, or tap a die on the lower edge | d4, d6, d8, d10, d12, d20, d100 |
+| Bezel | more / fewer dice (1 to 20); in Daggerheart the modifier |
+| Swipe up / down | roll mode: normal, advantage, disadvantage (d20: roll twice, keep the higher / lower), Daggerheart, Daggerheart +d6, Daggerheart -d6 |
 | Long press | options |
+| BOOT | back to the home screen |
+
+**Daggerheart**: the duality roll, two d12 for Hope (left, gold) and Fear (right, violet).
+The total says *with Hope* or *with Fear* after the higher die; doubles are a **critical**.
+Advantage adds a d6, disadvantage takes one away; the modifier counts too.
 
 A natural 20 turns gold, a natural 1 red. With several dice (or advantage) the single dice are
 listed under the total, discarded ones in brackets. Options: number of dice, modifier (−20 to

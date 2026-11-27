@@ -5,6 +5,16 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Display: windows sent to the panel always start on an even row. An odd chunk height made
+  the CO5300 shift the next window and left two rows of old pixels on screen (the dotted line
+  through texts on the home screen, gallery and dice).
+- Dice: new gestures: swipe left / right = die type, bezel = number of dice, swipe up / down =
+  roll mode, BOOT leaves the app.
+- Dice: Daggerheart duality roll (2d12 Hope and Fear, with Hope / with Fear, doubles are a
+  critical, +d6 / -d6 for advantage / disadvantage, modifier).
+
+## 0.1.9
+
 - Battery: settings for the capacity (charge current at ~0.5 C) and charge to 90 %; warnings
   at 15 % and 7 %, power off at 3 %; PMU cut-off at 3.2 V.
 - Power saving: CPU frequency scaling (80-240 MHz) with automatic light sleep, panel sleep with
@@ -22,6 +32,8 @@ number of the published release (`0.1.<build>`).
   part outside the circle dimmed; GIFs are decoded by the browser itself when it can, and the
   built-in decoder no longer paints missing pixels of a damaged frame (half-coloured frames).
 
+
+## 0.1.6
 
 - Dice app for D&D: d4 to d100 on the bezel, up to 20 dice, modifier, advantage /
   disadvantage, natural 20 / natural 1 highlighted, tap or shake to roll, saved rolls,

@@ -53,7 +53,10 @@ int  shuffle_next(int cur, int count, uint32_t *seed);
  * die twice and keep the higher / lower one (for 1d20 it is the D&D rule). drop_lowest drops
  * that many of the lowest kept dice (ability scores: 4d6, drop the lowest). */
 #define DICE_MAX 20
-enum { DICE_NORMAL = 0, DICE_ADV, DICE_DIS };
+// DICE_DH*: Daggerheart duality roll, 2d12 Hope and Fear (count and sides are ignored), plus
+// a d6 added (advantage) or taken away (disadvantage), plus the modifier
+enum { DICE_NORMAL = 0, DICE_ADV, DICE_DIS, DICE_DH, DICE_DH_ADV, DICE_DH_DIS, DICE_MODES };
+enum { DH_NONE = -1, DH_HOPE = 0, DH_FEAR, DH_CRIT };
 
 typedef struct {
     uint8_t count;        // 1..DICE_MAX
@@ -68,7 +71,9 @@ typedef struct {
     uint8_t val[DICE_MAX * 2];
     uint8_t kept[DICE_MAX * 2];      // 1 = counts in the total
     int     total;
-    bool    crit, fumble;            // d20: a kept natural 20 / natural 1
+    bool    crit, fumble;            // d20: a kept natural 20 / natural 1; Daggerheart: crit = doubles
+    int8_t  dh;                      // Daggerheart: DH_HOPE / DH_FEAR / DH_CRIT, else DH_NONE
+    uint8_t hope, fear, d6;          // Daggerheart dice (d6 = 0 without advantage/disadvantage)
 } dice_result_t;
 
 typedef uint32_t (*dice_rng_t)(void *ctx);   // 32 random bits
@@ -82,3 +87,4 @@ void dice_format(const dice_spec_t *s, char *buf, size_t n);
 // the kept / dropped dice as text: "14 9" with dropped ones in parentheses: "14 (9)"
 void dice_breakdown(const dice_result_t *r, char *buf, size_t n);
 int  dice_ability_mod(int score);   // D&D: (score - 10) / 2, rounded down
+bool dice_is_dh(const dice_spec_t *s);

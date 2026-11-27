@@ -220,15 +220,13 @@ int main(int argc, char **argv)
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("31_dice_d20");
-    ev(EV_SWIPE_LEFT, SCR_C, SCR_C);   // advantage
+    ev(EV_SWIPE_UP, SCR_C, 300);       // advantage
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("32_dice_advantage");
-    ev(EV_DIAL_CW, 400, 200);          // d12
-    ev(EV_DIAL_CW, 400, 200);          // d10
-    ev(EV_DIAL_CW, 400, 200);          // d8
-    ev(EV_DIAL_CW, 400, 200);          // d6
-    for (int i = 0; i < 7; i++) ev(EV_SWIPE_UP, SCR_C, 300);   // 8d6 (fireball)
+    ev(EV_SWIPE_DOWN, SCR_C, 300);     // normal again
+    for (int i = 0; i < 4; i++) ev(EV_SWIPE_RIGHT, SCR_C, 200);   // d20 -> d6
+    for (int i = 0; i < 7; i++) ev(EV_DIAL_CW, 400, 200);         // 8d6 (fireball)
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("33_dice_fireball");
@@ -243,7 +241,18 @@ int main(int argc, char **argv)
     shot("36_dice_history");
     ev(EV_BOOT_CLICK, 0, 0);
     ev(EV_BOOT_CLICK, 0, 0);
-    for (int i = 0; i < 5; i++) ev(EV_DIAL_CCW, 400, 200);   // d6 -> d100
+    for (int i = 0; i < 3; i++) ev(EV_SWIPE_UP, SCR_C, 300);      // Daggerheart
+    shot("38_dice_daggerheart_start");
+    ev(EV_DIAL_CW, 400, 200);                                     // +1
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(900);
+    shot("39_dice_daggerheart");
+    ev(EV_SWIPE_UP, SCR_C, 300);                                  // + d6
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(900);
+    shot("40_dice_daggerheart_adv");
+    ev(EV_SWIPE_LEFT, SCR_C, 200);                                // back to a normal die
+    for (int i = 0; i < 6; i++) ev(EV_SWIPE_LEFT, SCR_C, 200);
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("37_dice_d100");

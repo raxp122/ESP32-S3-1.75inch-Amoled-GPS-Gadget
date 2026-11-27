@@ -1,9 +1,13 @@
 // dice.c - dice for D&D (and any other tabletop RPG).
 //
 // Main screen: the die in the middle, the result in big digits, the die types on the lower
-// edge. Tap (or shake the pendant) rolls; the bezel changes the die; swipe up / down changes
-// the number of dice; swipe left cycles normal / advantage / disadvantage; long press opens
-// the options (modifier, saved rolls, ability scores, history...).
+// edge. Tap (or shake the pendant) rolls. Swipe left / right: the die type. Bezel: how many
+// dice (in Daggerheart: the modifier). Swipe up / down: the roll mode (normal, advantage,
+// disadvantage, Daggerheart, Daggerheart with advantage / disadvantage). Long press: options
+// (modifier, saved rolls, ability scores, history...). BOOT leaves the app.
+//
+// Daggerheart: two d12, Hope and Fear. The total says "with Hope" or "with Fear" after the
+// higher die; doubles are a critical. Advantage adds a d6, disadvantage takes one away.
 #include "ui.h"
 #include "board.h"
 #include "core.h"
@@ -14,6 +18,8 @@
 #include "esp_random.h"
 
 #define C_GOLD lv_color_hex(0xFFD54A)
+#define C_HOPE lv_color_hex(0xFFC24D)
+#define C_FEAR lv_color_hex(0xB07CFF)
 #define HIST_MAX 30
 #define DIE_R 100
 
@@ -25,6 +31,7 @@ static hist_t hist[HIST_MAX];
 static int hist_n;                 // entries used (newest at hist[0])
 
 static lv_obj_t *die, *outline, *inner, *num_l, *expr_l, *mode_l, *break_l, *type_l[N_TYPES];
+static lv_obj_t *hope_l, *fear_l, *hope_cap, *fear_cap;   // Daggerheart: the two dice at the sides
 static lv_point_precise_t pts_out[12], pts_in[8];
 static lv_timer_t *anim_t, *shake_t;
 static int anim_step;
@@ -42,13 +49,17 @@ static int type_index(void)
 }
 
 static void fix_type(void) { g_set.dice.sides = types[type_index()]; }
+static bool dh(void) { return dice_is_dh(&g_set.dice); }
+
+static const int mode_names[DICE_MODES] = {S_DICE_NORMAL, S_DICE_ADV, S_DICE_DIS, S_DICE_DH, S_DICE_DH_ADV, S_DICE_DH_DIS};
+static const char *const mode_tags[DICE_MODES] = {"", " ADV", " DIS", " DH", " DH+", " DH-"};
 
 /* ---------------- drawing ---------------- */
 
 // the outline of the die: a polygon per type (d20 with its inner triangle)
 static void shape(void)
 {
-    int s = g_set.dice.sides, n, start = -90;
+    int s = dh() ? 12 : g_set.dice.sides, n, start = -90;
     float sx = 1, sy = 1;
     switch (s) {
     case 4: n = 3; sy = 1.08f; break;
@@ -92,11 +103,17 @@ static void header(void)
     char b[32];
     dice_format(&g_set.dice, b, sizeof(b));
     ui_set_text(expr_l, b);
-    static const int modes[] = {-1, S_DICE_ADV, S_DICE_DIS};
-    if (!have_last || !(last.crit || last.fumble))
-        ui_set_text(mode_l, g_set.dice.mode ? T(modes[g_set.dice.mode]) : "");
+    if (!have_last || !(last.crit || last.fumble || last.dh != DH_NONE)) {
+        ui_set_text(mode_l, g_set.dice.mode ? T(mode_names[g_set.dice.mode]) : "");
+        lv_obj_set_style_text_color(mode_l, C_DIM, 0);
+    }
+    bool d = dh();
+    lv_obj_update_flag(hope_l, LV_OBJ_FLAG_HIDDEN, !d);
+    lv_obj_update_flag(fear_l, LV_OBJ_FLAG_HIDDEN, !d);
+    lv_obj_update_flag(hope_cap, LV_OBJ_FLAG_HIDDEN, !d);
+    lv_obj_update_flag(fear_cap, LV_OBJ_FLAG_HIDDEN, !d);
     for (int i = 0; i < N_TYPES; i++) {
-        bool sel = i == type_index();
+        bool sel = !d && i == type_index();
         lv_obj_set_style_text_color(type_l[i], sel ? ui_accent() : C_DIM, 0);
         lv_obj_set_style_text_font(type_l[i], sel ? &font_m : &font_s, 0);
     }
@@ -107,8 +124,10 @@ static void changed(void)
 {
     have_last = false;
     char b[8];
-    snprintf(b, sizeof(b), "%d", g_set.dice.sides);
+    snprintf(b, sizeof(b), "%d", dh() ? 12 : g_set.dice.sides);
     lv_label_set_text(num_l, b);
+    lv_label_set_text(hope_l, "-");
+    lv_label_set_text(fear_l, "-");
     lv_obj_set_style_text_opa(num_l, LV_OPA_30, 0);
     color(ui_accent());
     lv_label_set_text(break_l, T(S_DICE_HINT));
@@ -129,6 +148,23 @@ static void show_result(void)
     color(last.crit ? C_GOLD : last.fumble ? C_WARN : C_TEXT);
     lv_obj_set_style_line_color(outline, last.crit ? C_GOLD : last.fumble ? C_WARN : ui_accent(), 0);
     lv_obj_set_style_line_color(inner, last.crit ? C_GOLD : last.fumble ? C_WARN : ui_accent(), 0);
+    if (last.dh != DH_NONE) {   // Daggerheart: the two dice, the outcome, the colour of who won
+        lv_color_t c = last.dh == DH_CRIT ? C_GOLD : last.dh == DH_HOPE ? C_HOPE : C_FEAR;
+        color(c);
+        lv_obj_set_style_line_color(outline, c, 0);
+        snprintf(b, sizeof(b), "%d", last.hope);
+        lv_label_set_text(hope_l, b);
+        snprintf(b, sizeof(b), "%d", last.fear);
+        lv_label_set_text(fear_l, b);
+        int o = snprintf(b, sizeof(b), "%d + %d", last.hope, last.fear);
+        if (last.d6) o += snprintf(b + o, sizeof(b) - o, " %c d6 %d", g_set.dice.mode == DICE_DH_ADV ? '+' : '-', last.d6);
+        if (g_set.dice.mod) snprintf(b + o, sizeof(b) - o, " %+d", g_set.dice.mod);
+        lv_label_set_text(break_l, b);
+        lv_obj_set_style_text_color(break_l, C_DIM, 0);
+        ui_set_text(mode_l, T(last.dh == DH_CRIT ? S_DH_CRIT : last.dh == DH_HOPE ? S_DH_WITH_HOPE : S_DH_WITH_FEAR));
+        lv_obj_set_style_text_color(mode_l, c, 0);
+        return;
+    }
     // one die: nothing to break down, unless advantage shows the discarded one
     if (last.n > 1) dice_breakdown(&last, b, sizeof(b));
     else b[0] = 0;
@@ -161,6 +197,15 @@ static void anim_cb(lv_timer_t *t)
     lv_obj_set_style_translate_x(die, (int)(amp * sinf(anim_step * 2.3f)), 0);
     lv_obj_set_style_translate_y(die, (int)(-amp * fabsf(cosf(anim_step * 1.7f))), 0);
     char b[8];
+    if (dh()) {
+        snprintf(b, sizeof(b), "%d", 1 + (int)(esp_random() % 12));
+        lv_label_set_text(hope_l, b);
+        snprintf(b, sizeof(b), "%d", 1 + (int)(esp_random() % 12));
+        lv_label_set_text(fear_l, b);
+        snprintf(b, sizeof(b), "%d", 2 + (int)(esp_random() % 23) + g_set.dice.mod);
+        lv_label_set_text(num_l, b);
+        return;
+    }
     int lo = g_set.dice.count + g_set.dice.mod, hi = g_set.dice.count * g_set.dice.sides + g_set.dice.mod;
     snprintf(b, sizeof(b), "%d", lo + (int)(esp_random() % (uint32_t)(hi - lo + 1)));
     lv_label_set_text(num_l, b);
@@ -179,6 +224,7 @@ static void roll(void)
     color(C_TEXT);
     lv_obj_set_style_line_color(outline, ui_accent(), 0);
     ui_set_text(break_l, "");
+    ui_set_text(mode_l, "");
     anim_step = 0;
     anim_t = lv_timer_create(anim_cb, 45, NULL);
 }
@@ -209,9 +255,8 @@ static void v_count(char *b, int n) { snprintf(b, n, "%d", g_set.dice.count); }
 static void a_count(int d) { g_set.dice.count = g_set.dice.count + d < 1 ? 1 : g_set.dice.count + d > DICE_MAX ? DICE_MAX : g_set.dice.count + d; settings_mark(); }
 static void v_mod(char *b, int n) { snprintf(b, n, "%+d", g_set.dice.mod); }
 static void a_mod(int d) { int m = g_set.dice.mod + d; g_set.dice.mod = m < -20 ? -20 : m > 30 ? 30 : m; settings_mark(); }
-static const int mode_names[] = {S_DICE_NORMAL, S_DICE_ADV, S_DICE_DIS};
-static void v_mode(char *b, int n) { snprintf(b, n, "%s", T(mode_names[g_set.dice.mode % 3])); }
-static void a_mode(int d) { g_set.dice.mode = (g_set.dice.mode + d + 3) % 3; settings_mark(); }
+static void v_mode(char *b, int n) { snprintf(b, n, "%s", T(mode_names[g_set.dice.mode % DICE_MODES])); }
+static void a_mode(int d) { g_set.dice.mode = (g_set.dice.mode + d + DICE_MODES) % DICE_MODES; settings_mark(); }
 static void v_shake(char *b, int n) { snprintf(b, n, "%s", T(g_set.dice_shake ? S_ON : S_OFF)); }
 static void s_shake(void) { g_set.dice_shake = !g_set.dice_shake; settings_mark(); }
 static void v_cur(char *b, int n) { dice_format(&g_set.dice, b, n); }
@@ -275,6 +320,14 @@ static void enter(lv_obj_t *root, void *arg)
     }
     num_l = ui_label(root, &font_xl, C_TEXT, "");
     lv_obj_align(num_l, LV_ALIGN_CENTER, 0, -4);
+    hope_l = ui_label(root, &font_l, C_HOPE, "-");
+    lv_obj_align(hope_l, LV_ALIGN_CENTER, -160, -16);
+    fear_l = ui_label(root, &font_l, C_FEAR, "-");
+    lv_obj_align(fear_l, LV_ALIGN_CENTER, 160, -16);
+    hope_cap = ui_label(root, &font_s, C_HOPE, T(S_DH_HOPE));
+    lv_obj_align(hope_cap, LV_ALIGN_CENTER, -160, 24);
+    fear_cap = ui_label(root, &font_s, C_FEAR, T(S_DH_FEAR));
+    lv_obj_align(fear_cap, LV_ALIGN_CENTER, 160, 24);
     break_l = ui_label(root, &font_s, C_DIM, "");
     ui_one_line(break_l, 250);
     lv_obj_align(break_l, LV_ALIGN_CENTER, 0, 112);
@@ -301,8 +354,30 @@ static void leave(void)
 
 static void set_type(int i)
 {
+    if (dh()) g_set.dice.mode = DICE_NORMAL;   // picking a die leaves Daggerheart
     g_set.dice.sides = types[(i + N_TYPES) % N_TYPES];
     if (g_set.dice.sides != 20 && g_set.dice.mode) g_set.dice.mode = DICE_NORMAL;   // adv/dis: a d20 thing
+    changed();
+}
+
+static void set_mode(int d)
+{
+    g_set.dice.mode = (g_set.dice.mode + d + DICE_MODES) % DICE_MODES;
+    if ((g_set.dice.mode == DICE_ADV || g_set.dice.mode == DICE_DIS) && g_set.dice.sides != 20) g_set.dice.sides = 20;
+    changed();
+}
+
+// bezel: how many dice; in Daggerheart (always two d12) the modifier instead
+static void step_count(int d)
+{
+    if (dh()) {
+        int m = g_set.dice.mod + d;
+        g_set.dice.mod = m < -20 ? -20 : m > 30 ? 30 : m;
+    } else {
+        int c = g_set.dice.count + d;
+        if (c < 1 || c > DICE_MAX) return;
+        g_set.dice.count = c;
+    }
     changed();
 }
 
@@ -318,17 +393,13 @@ static bool event(ev_t e, int x, int y)
         }
         roll();
         return true;
-    // the types sit along the lower edge with d4 on the left: a clockwise slide moves right to
-    // left down there, so the selection follows the finger towards the smaller dice
-    case EV_DIAL_CW: set_type(type_index() - 1); return true;
-    case EV_DIAL_CCW: set_type(type_index() + 1); return true;
-    case EV_SWIPE_UP: if (g_set.dice.count < DICE_MAX) { g_set.dice.count++; changed(); } return true;
-    case EV_SWIPE_DOWN: if (g_set.dice.count > 1) { g_set.dice.count--; changed(); } return true;
-    case EV_SWIPE_LEFT:
-        g_set.dice.mode = (g_set.dice.mode + 1) % 3;
-        if (g_set.dice.mode && g_set.dice.sides != 20) g_set.dice.sides = 20;
-        changed();
-        return true;
+    // swipes left / right: the die type (the app is left with BOOT, not with a swipe)
+    case EV_SWIPE_LEFT: set_type(dh() ? type_index() : type_index() + 1); return true;
+    case EV_SWIPE_RIGHT: set_type(dh() ? type_index() : type_index() - 1); return true;
+    case EV_DIAL_CW: step_count(1); return true;
+    case EV_DIAL_CCW: step_count(-1); return true;
+    case EV_SWIPE_UP: set_mode(1); return true;
+    case EV_SWIPE_DOWN: set_mode(-1); return true;
     case EV_LONG_PRESS: opt_menu.sel = 0; ui_push(&scr_menu, &opt_menu); return true;
     default: return false;
     }
@@ -356,14 +427,13 @@ static void fav_pick(void)
 
 static void fav_enter(lv_obj_t *root, void *arg)
 {
-    static const char *mode_tag[] = {"", "  ADV", "  DIS"};
     int n = 0;
     for (int i = 0; i < DICE_FAVS; i++) {
         dice_spec_t *f = &g_set.dice_fav[i];
         if (!f->count) continue;
         char b[20];
         dice_format(f, b, sizeof(b));
-        snprintf(fav_text[n], sizeof(fav_text[n]), "%s%s", b, mode_tag[f->mode % 3]);
+        snprintf(fav_text[n], sizeof(fav_text[n]), "%s%s", b, mode_tags[f->mode % DICE_MODES]);
         fav_items[n] = (menu_item_t){.icon = IC_STAR, .str = -1, .text = fav_text[n], .select = fav_pick};
         fav_map[n++] = i;
     }
@@ -392,17 +462,21 @@ static void h_value(char *b, int n)
 {
     const hist_t *h = &hist[h_menu.sel];
     char d[64];
+    if (h->res.dh != DH_NONE) {
+        snprintf(b, n, "%s  \xC2\xB7  %d + %d", T(h->res.dh == DH_CRIT ? S_DH_CRIT : h->res.dh == DH_HOPE ? S_DH_WITH_HOPE : S_DH_WITH_FEAR),
+                 h->res.hope, h->res.fear);
+        return;
+    }
     dice_breakdown(&h->res, d, sizeof(d));
     snprintf(b, n, "%s%s", h->res.crit ? T(S_DICE_CRIT) : h->res.fumble ? T(S_DICE_FUMBLE) : "", h->res.n > 1 ? d : "");
 }
 
 static void h_enter(lv_obj_t *root, void *arg)
 {
-    static const char *mode_tag[] = {"", " ADV", " DIS"};
     for (int i = 0; i < hist_n; i++) {
         char b[16];
         dice_format(&hist[i].spec, b, sizeof(b));
-        snprintf(h_text[i], sizeof(h_text[i]), "%d  \xC2\xB7  %s%s", hist[i].res.total, b, mode_tag[hist[i].spec.mode % 3]);
+        snprintf(h_text[i], sizeof(h_text[i]), "%d  \xC2\xB7  %s%s", hist[i].res.total, b, mode_tags[hist[i].spec.mode % DICE_MODES]);
         h_items[i] = (menu_item_t){.icon = i ? IC_HISTORY : IC_DICE_D20, .str = -1, .text = h_text[i], .value = h_value};
     }
     h_menu.count = hist_n;
