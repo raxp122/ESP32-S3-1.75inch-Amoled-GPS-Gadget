@@ -115,7 +115,8 @@ The apps sit on a ring along the edge, the selected one at 12 o'clock. At 6 o'cl
 small strokes mark a horizon: apps sliding towards it fade out and new ones come in from the
 other side, so the list has room for any number of apps. Settings › Screen › **App list**:
 *Loops* (after the last app comes the first again) or *Stops at the ends* (at the first or last
-app that half of the circle stays empty).
+app that half of the circle stays empty). Between the two strokes sits a fixed **shortcut** to
+any app, Settings by default (Settings › Screen › Shortcut at the bottom).
 
 ## Apps
 

@@ -4,6 +4,9 @@
 // At the end of the list the ring either goes on from the start (loop) or stops, leaving that
 // side of the circle empty (Settings > Screen > Home list).
 //
+// At 6 o'clock, between the two strokes of the horizon, a fixed shortcut: one app chosen in
+// Settings > Screen > Shortcut (Settings by default). It stays in the ring too.
+//
 // The ring follows the finger: sliding clockwise along the edge moves the icons clockwise.
 // No LVGL transforms (they force extra layers: slow, and they tear on this panel); the discs
 // change size directly.
@@ -32,14 +35,19 @@ static const app_t apps[] = {
 #define D_BIG    112      // disc at the top
 #define D_SMALL  70       // discs along the ring
 #define STEP     40.0f    // degrees between two apps
-#define HORIZON  4.0f     // offset (in apps) where an app reaches the line at the bottom
+#define HORIZON  3.5f     // offset (in apps) where an app fades out, before the shortcut at the bottom
+#define D_SHORT  62       // the shortcut at 6 o'clock
 #define POOL     9        // discs in use: offsets -4..+4
 
 static int sel;            // virtual index: in loop mode it can be any integer
 static float pos;          // animated position, same units
-static lv_obj_t *disc[POOL], *ico[POOL], *line_l, *line_r, *time_l, *name_l, *sub_l;
+static lv_obj_t *disc[POOL], *ico[POOL], *line_l, *line_r, *time_l, *name_l, *sub_l, *short_d, *short_i;
 
 static bool loop_mode(void) { return g_set.home_loop; }
+
+int home_app_count(void) { return N_APPS; }
+const char *home_app_name(int i) { return T(apps[((i % N_APPS) + N_APPS) % N_APPS].name); }
+static int shortcut(void) { return g_set.home_shortcut < N_APPS ? g_set.home_shortcut : HOME_SHORTCUT_DEFAULT; }
 static int app_of(int v) { return ((v % N_APPS) + N_APPS) % N_APPS; }
 
 // half of the visible offsets: in loop mode an app never shows twice at the same time
@@ -146,12 +154,14 @@ static void go(int d)
     refresh_text();
 }
 
-static void open_app(void)
+static void open_index(int i)
 {
-    const app_t *a = &apps[app_of(sel)];
+    const app_t *a = &apps[i];
     if (!a->scr) { pendant_resume(); return; }
     ui_push(a->scr, NULL);
 }
+
+static void open_app(void) { open_index(app_of(sel)); }
 
 static lv_obj_t *tick_mark(lv_obj_t *root, float deg)
 {
@@ -173,8 +183,14 @@ static void enter(lv_obj_t *root, void *arg)
         sel = app_of(sel);
     }
     pos = sel;
-    line_l = tick_mark(root, 90 - 7);
-    line_r = tick_mark(root, 90 + 7);
+    line_l = tick_mark(root, 90 - 17);
+    line_r = tick_mark(root, 90 + 17);
+    short_d = ui_circle(root, D_SHORT, C_CARD);
+    lv_obj_set_style_border_color(short_d, C_FAINT, 0);
+    lv_obj_set_style_border_width(short_d, 2, 0);
+    lv_obj_set_pos(short_d, SCR_C - D_SHORT / 2, SCR_C + RING_R - D_SHORT / 2);
+    short_i = ui_label(short_d, &font_m, ui_accent(), apps[shortcut()].icon);
+    lv_obj_center(short_i);
     for (int k = 0; k < POOL; k++) {
         disc[k] = ui_circle(root, D_SMALL, C_CARD);
         lv_obj_set_style_border_color(disc[k], ui_accent(), 0);
@@ -207,6 +223,8 @@ static bool event(ev_t e, int x, int y)
     case EV_TAP: {
         int dx = x - SCR_C, dy = y - SCR_C;
         if (dx * dx + dy * dy < 120 * 120) { open_app(); return true; }
+        int sx = x - SCR_C, sy = y - (SCR_C + RING_R);   // the shortcut at the bottom
+        if (sx * sx + sy * sy < (D_SHORT / 2 + 12) * (D_SHORT / 2 + 12)) { open_index(shortcut()); return true; }
         // a tap on a disc: bring it up (or open it if it is already there)
         for (int v = sel - 4; v <= sel + 4; v++) {
             lv_obj_t *o = disc[((v % POOL) + POOL) % POOL];

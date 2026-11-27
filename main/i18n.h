@@ -147,6 +147,7 @@ typedef enum {
     S_DH_WITH_HOPE,
     S_DH_WITH_FEAR,
     S_DH_CRIT,
+    S_HOME_SHORTCUT,
     S_COUNT
 } str_t;
 

@@ -7,6 +7,8 @@
 static menu_t *m;
 static lv_obj_t *title, *group, *prev, *next, *track, *thumb;
 static bool editing;
+static uint32_t shown_at;   // when the current item came up: a long name starts scrolling after a while
+static int shown_sel = -1;
 static int confirm_sel = -1;
 static uint32_t confirm_until;
 
@@ -28,7 +30,12 @@ static void refresh(int dir)
     if (!m || !m->count) return;
     const menu_item_t *it = &m->items[m->sel];
     lv_label_set_text(icon, it->icon ? it->icon : "");
-    lv_label_set_text(label, item_text(it));
+    if (shown_sel != m->sel) {   // a new item: its name cut with "...", scrolls only after a pause
+        shown_sel = m->sel;
+        shown_at = lv_tick_get();
+        lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+    }
+    ui_set_text(label, item_text(it));
     char v[96] = "";
     if (confirm_sel == m->sel) strlcpy(v, T(S_TAP_AGAIN), sizeof(v));
     else if (it->value) it->value(v, sizeof(v));
@@ -93,6 +100,7 @@ static void enter(lv_obj_t *root, void *arg)
     // a rebuild of the same menu (new accent, language) stays in edit mode
     if (arg != last) editing = false;
     last = m = arg;
+    shown_sel = -1;
     confirm_sel = -1;
     if (m->sel >= m->count) m->sel = m->count ? m->count - 1 : 0;
     title = ui_label(root, &font_s, ui_accent(), T(m->title));
@@ -184,6 +192,10 @@ static bool event(ev_t e, int x, int y)
 static void tick(void)
 {
     if (!m || !m->count) return;
+    // resting on an item: a name too long for the circle scrolls (only if it does not fit)
+    if (shown_sel == m->sel && lv_label_get_long_mode(label) != LV_LABEL_LONG_SCROLL_CIRCULAR &&
+        lv_tick_get() - shown_at > 1500)
+        lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);
     if (confirm_sel >= 0 && (int32_t)(lv_tick_get() - confirm_until) > 0) { confirm_sel = -1; refresh(0); return; }
     // values that change by themselves (Wi-Fi state, battery...)
     const menu_item_t *it = &m->items[m->sel];
