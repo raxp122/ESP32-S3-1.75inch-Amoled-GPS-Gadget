@@ -155,6 +155,7 @@ int battery_percent_pick(int gauge, float v, bool charging, bool *estimated)
     // while charging the voltage reads high (4.1-4.2 V even half full): only a gauge stuck at
     // zero is replaced then
     else if (charging) { est_used = gauge <= 2 && est > 10; r = est_used ? est : gauge; }
+    else if (gauge <= 5 && est >= 15) { r = est; est_used = true; }   // a gauge stuck near zero
     else {
         // hysteresis: the gauge takes over again only once it is close to the voltage estimate
         int d = abs(gauge - est);

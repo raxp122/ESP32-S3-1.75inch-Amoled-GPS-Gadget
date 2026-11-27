@@ -5,6 +5,11 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Battery: fixed the pendant switching itself off around 35 % (and again right after being
+  switched on) with a fuel gauge stuck at 0 %: such a gauge is now always replaced by the
+  voltage estimate, and the low-battery power off needs the percentage and the voltage to agree,
+  three checks in a row (30 s), and not in the first 30 s after power on.
+- Settings › Battery › Power off below: never, 3 % (default), 5, 10, 15 or 20 %.
 - Pendant, battery: with the screen off nothing is read or decoded and the player checks only
   every 150 ms; animations run at full CPU speed only while reading and decoding each frame
   (the wait until the next frame is at the low clock / light sleep); a still image is checked

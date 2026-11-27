@@ -54,6 +54,7 @@ typedef struct {
     uint16_t disp_int_all_s;    // slideshow interval: everything
     uint16_t disp_int_img_s;    //                     images only
     uint16_t disp_int_anim_s;   //                     GIFs and videos only
+    uint8_t  battery_off_pct;   // power off below this charge (0 = never; the PMU still cuts at 3.2 V)
 } settings_t;
 
 extern settings_t g_set;

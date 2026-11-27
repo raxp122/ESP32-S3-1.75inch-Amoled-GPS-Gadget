@@ -190,8 +190,10 @@ Made for a small cell (default 500 mAh, set the real capacity in Settings › Ba
 
 - **Charger** at about 0.5 C for the set capacity; *Charge to 90 %* stops at 4.1 V instead of
   4.2 V, kinder to the cell.
-- **Protection**: warnings at 15 % and 7 %; at 3 % (and below 3.55 V) the pendant switches itself
-  off, leaving the cell its reserve. The PMU also cuts the power below 3.2 V on its own.
+- **Protection**: warnings at 15 % and 7 %; below the *Power off below* threshold (3 % by
+  default; 5-20 % or never) the pendant switches itself off, leaving the cell its reserve. The
+  percentage and the voltage must agree for 30 s, so a dip under load or a gauge that has not
+  learned the battery does not trigger it. The PMU also cuts the power below 3.2 V on its own.
 - **Power saving** (on by default): the CPU runs at 80 MHz and goes into light sleep whenever
   nothing is happening, 240 MHz only while drawing or decoding. The AMOLED keeps a still picture
   on its own, so a photo in pendant mode costs little more than the screen. With the screen off

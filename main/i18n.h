@@ -168,6 +168,7 @@ typedef enum {
     S_INTERVAL_IMG,
     S_INTERVAL_ANIM,
     S_NO_MEDIA_FILTER,
+    S_BATT_OFF_AT,
     S_COUNT
 } str_t;
 

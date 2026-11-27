@@ -29,6 +29,7 @@ static int64_t last_motion_us;
 static vec3_t prev;
 static bool have_prev;
 static int warned;   // lowest battery warning shown: 0, 15, 7
+static int low_count;   // battery checks in a row below the power-off threshold
 static int bat_pct = -1;
 static bool bat_chg, bat_est, bat_present;
 static int new_battery_in;   // ticks until the fuel gauge reset (0 = none pending)
@@ -90,14 +91,19 @@ void power_hold(bool on)
 
 static void battery_check(void)
 {
-    if (board_charging() || usb) { warned = 0; return; }
+    if (board_charging() || usb) { warned = 0; low_count = 0; return; }
     float v = board_battery_volts();
     if (v <= 0) return;   // no battery (USB only)
     bool e = bat_est;
     int p = battery_percent_pick(board_battery_percent(), v, false, &e);
-    // almost empty: switch off while the cell still has its reserve (a LiPo should not be
-    // drained below ~3.4-3.5 V at rest); the voltage check filters out a confused gauge
-    if (p <= 3 && v > 0 && v < 3.55f) {
+    // almost empty: switch off while the cell still has its reserve. Only when the percentage
+    // and the voltage both say so (a gauge that has not learned the battery reads 0 % on a half
+    // full cell), three checks in a row (30 s: a dip under load is not enough) and not in the
+    // first half minute after power on.
+    int lim = g_set.battery_off_pct;
+    bool low = lim && p <= lim && battery_percent_from_volts(v) <= lim + 5;
+    low_count = low ? low_count + 1 : 0;
+    if (low_count >= 3 && esp_timer_get_time() > 30LL * 1000 * 1000) {
         ESP_LOGW(TAG, "battery empty (%d%%, %.2f V): power off", p, v);
         ui_toast(T(S_BATTERY_EMPTY));
         ui_power_off();

@@ -101,6 +101,13 @@ static void s_psave(void) { g_set.power_save = !g_set.power_save; power_apply();
 static void v_wsave(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.wifi_save)); }
 static void s_wsave(void) { g_set.wifi_save = !g_set.wifi_save; settings_mark(); }
 static void v_batnow(char *b, int n) { ui_battery_icon(b, n); }
+static const int offpct_vals[] = {0, 3, 5, 10, 15, 20};
+static void v_offpct(char *b, int n)
+{
+    if (!g_set.battery_off_pct) snprintf(b, n, "%s", T(S_NEVER));
+    else snprintf(b, n, "%d%%", g_set.battery_off_pct);
+}
+static void a_offpct(int d) { g_set.battery_off_pct = (uint8_t)step_list(offpct_vals, 6, g_set.battery_off_pct, d); settings_mark(); }
 
 static const menu_item_t battery_items[] = {
     {IC_BAT_FULL, S_INFO_BATTERY, NULL, v_batnow},
@@ -108,8 +115,9 @@ static const menu_item_t battery_items[] = {
     {IC_WIFI, S_WIFI_SAVE, NULL, v_wsave, s_wsave},
     {IC_BAT_3, S_BATT_CAPACITY, NULL, v_mah, NULL, a_mah},
     {IC_HEART, S_BATT_CARE, NULL, v_care, s_care},
+    {IC_POWER, S_BATT_OFF_AT, NULL, v_offpct, NULL, a_offpct},
 };
-static menu_t battery_menu = {S_SET_BATTERY, battery_items, 5, 0};
+static menu_t battery_menu = {S_SET_BATTERY, battery_items, 6, 0};
 
 /* ---------------- Pendant ---------------- */
 

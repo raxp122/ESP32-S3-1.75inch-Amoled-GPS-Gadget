@@ -224,6 +224,9 @@ static void test_battery(void)
     CHECK(battery_percent_pick(5, 3.50f, false, NULL) == 5);     // really low: the gauge wins
     CHECK(battery_percent_pick(70, 0, false, NULL) == 70);       // no voltage
     CHECK(battery_percent_pick(0, 4.12f, true, NULL) == 97);     // charging, gauge stuck at zero
+    CHECK(battery_percent_pick(0, 3.70f, false, NULL) == 34);    // stuck at zero, half empty: the voltage
+    CHECK(battery_percent_pick(3, 3.60f, false, NULL) == 15);
+    CHECK(battery_percent_pick(4, 3.50f, false, NULL) == 4);     // really almost empty: the gauge
     bool e = false;
     CHECK(battery_percent_pick(85, 4.09f, false, &e) == 85 && !e);   // the gauge: not estimated
     CHECK(battery_percent_pick(0, 4.09f, false, &e) == 94 && e);     // the estimate: flagged

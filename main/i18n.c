@@ -164,6 +164,7 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_INTERVAL_ALL] = {"Intervallo misto", "Interval, mixed"},
     [S_INTERVAL_IMG] = {"Intervallo immagini", "Interval, images"},
     [S_INTERVAL_ANIM] = {"Intervallo GIF e video", "Interval, GIFs and videos"},
+    [S_BATT_OFF_AT] = {"Spegni sotto il", "Power off below"},
     [S_NO_MEDIA_FILTER] = {"Nessun media di questo tipo: mostro tutto", "No media of this kind: showing everything"},
     [S_CAL_WEEK] = {"Settimana %d \xC2\xB7 giorno %d di %d", "Week %d \xC2\xB7 day %d of %d"},
 };
