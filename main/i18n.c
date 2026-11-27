@@ -157,6 +157,18 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_CAL_DAYS_AGO] = {"%d giorni fa", "%d days ago"},
     [S_CAL_NEXT] = {"Prossimo festivo: %s, tra %d g", "Next holiday: %s, in %d d"},
     [S_PENDANT_MODE] = {"Riproduzione", "Plays"},
+    [S_PENDANT_FILTER] = {"Contenuto", "Content"},
+    [S_FILTER_ALL] = {"Immagini e video", "Images and videos"},
+    [S_FILTER_IMAGES] = {"Solo immagini", "Images only"},
+    [S_FILTER_ANIM] = {"Solo GIF e video", "GIFs and videos only"},
+    [S_INTERVAL_ALL] = {"Intervallo misto", "Interval, mixed"},
+    [S_INTERVAL_IMG] = {"Intervallo immagini", "Interval, images"},
+    [S_INTERVAL_ANIM] = {"Intervallo GIF e video", "Interval, GIFs and videos"},
+    [S_BATT_OFF_AT] = {"Spegni sotto il", "Power off below"},
+    [S_BATT_OFF_TITLE] = {"Batteria al %d%%", "Battery at %d%%"},
+    [S_BATT_OFF_MSG] = {"Mi spengo tra %d s\nper proteggere la batteria", "Switching off in %d s\nto protect the battery"},
+    [S_BATT_OFF_HINT] = {"Collega il caricatore per restare acceso", "Plug in the charger to stay on"},
+    [S_NO_MEDIA_FILTER] = {"Nessun media di questo tipo: mostro tutto", "No media of this kind: showing everything"},
     [S_CAL_WEEK] = {"Settimana %d \xC2\xB7 giorno %d di %d", "Week %d \xC2\xB7 day %d of %d"},
 };
 

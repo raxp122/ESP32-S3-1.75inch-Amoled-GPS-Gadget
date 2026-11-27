@@ -396,7 +396,7 @@ static void on_event(ev_t e, int x, int y)
     if (e == EV_BOOT_LONG) { ui_home(); return; }
 }
 
-static lv_timer_t *hold_timer;
+static lv_timer_t *hold_timer, *tick_timer;
 static int64_t off_since_us;
 
 bool ui_clock_keeps_on(void)
@@ -422,6 +422,9 @@ static void power_policy(void)
     bool ambient = ui_clock_ambient();
     input_set_poll_ms(off ? 60 : (ambient || (s && (s->flags & SCR_NO_TOUCH))) ? 30 : 12);
     lv_timer_set_period(hold_timer, off ? 120 : 40);
+    // locked with PWR: only PWR can wake it (handled by the input task), so the housekeeping
+    // timer slows down to once a second (battery checks and the like keep running)
+    lv_timer_set_period(tick_timer, off && locked ? 1000 : 200);
     // the home Wi-Fi is not needed while worn, nor with the screen off for a minute; the
     // pages that use it (upload, Wi-Fi, updates) have the screen on and bring it back
     bool idle_off = off && now - off_since_us > 60LL * 1000 * 1000;
@@ -453,7 +456,7 @@ void ui_init(void)
     ui_apply_tz();
     overlays_create();
     input_init(on_event);
-    lv_timer_create(tick_cb, 200, NULL);
+    tick_timer = lv_timer_create(tick_cb, 200, NULL);
     hold_timer = lv_timer_create(hold_cb, 40, NULL);
     ui_push(&scr_home, NULL);
 }

@@ -55,6 +55,16 @@ int  battery_percent_pick(int gauge, float volts, bool charging, bool *estimated
 // next index of a shuffled slideshow (never the current one when count > 1)
 int  shuffle_next(int cur, int count, uint32_t *seed);
 
+// what pendant mode plays: everything, still images only, animations (GIF / video) only
+enum { MEDIA_FILTER_ALL = 0, MEDIA_FILTER_IMAGES, MEDIA_FILTER_ANIM, MEDIA_FILTERS };
+bool media_filter_ok(int kind, int filter);
+int  media_filter_count(const uint8_t *kinds, int n, int filter);
+// the media to start with: `start` if it passes the filter, else the next one that does; -1 if none
+int  media_pick_first(const uint8_t *kinds, int n, int start, int filter);
+// the media after `cur` among those that pass the filter (in order, or shuffled: never cur
+// itself when there is another one); -1 if none passes
+int  media_pick_next(const uint8_t *kinds, int n, int cur, int filter, bool shuffle, uint32_t *seed);
+
 /* ---- calendar ----
  * Gregorian dates, years 1900-2199. Weekday 0 = Monday ... 6 = Sunday. */
 typedef struct { int16_t y; uint8_t m, d; } date_t;   // m 1-12, d 1-31

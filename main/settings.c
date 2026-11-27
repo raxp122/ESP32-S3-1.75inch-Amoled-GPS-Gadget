@@ -43,6 +43,11 @@ static void defaults(settings_t *s)
     s->battery_care = 0;
     s->home_shortcut = HOME_SHORTCUT_DEFAULT;
     s->clock_on = 1;
+    s->disp_filter = MEDIA_FILTER_ALL;
+    s->disp_int_all_s = 10;
+    s->disp_int_img_s = 60;
+    s->disp_int_anim_s = 20;
+    s->battery_off_pct = 3;
 }
 
 void settings_load(void)
@@ -73,6 +78,11 @@ void settings_load(void)
     if (g_set.night_from_h > 23) g_set.night_from_h = 23;
     if (g_set.night_to_h > 23) g_set.night_to_h = 7;
     if (g_set.disp_interval_s < 3) g_set.disp_interval_s = 30;
+    if (g_set.disp_filter >= MEDIA_FILTERS) g_set.disp_filter = MEDIA_FILTER_ALL;
+    if (g_set.disp_int_all_s < 3) g_set.disp_int_all_s = 10;
+    if (g_set.disp_int_img_s < 3) g_set.disp_int_img_s = 60;
+    if (g_set.disp_int_anim_s < 3) g_set.disp_int_anim_s = 20;
+    if (g_set.battery_off_pct > 50) g_set.battery_off_pct = 3;
     g_set.dice = dice_clamp(g_set.dice);
     if (g_set.battery_mah < 100 || g_set.battery_mah > 5000) g_set.battery_mah = 500;
 }
@@ -96,4 +106,11 @@ void settings_reset(void)
     memcpy(g_set.wifi_pass, keep.wifi_pass, sizeof(keep.wifi_pass));
     g_set.wifi_on = keep.wifi_on;
     settings_save();
+}
+
+uint16_t *settings_interval(int filter)
+{
+    if (filter == MEDIA_FILTER_IMAGES) return &g_set.disp_int_img_s;
+    if (filter == MEDIA_FILTER_ANIM) return &g_set.disp_int_anim_s;
+    return &g_set.disp_int_all_s;
 }

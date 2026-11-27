@@ -30,7 +30,8 @@ int64_t esp_timer_get_time(void) { return sim_now_us; }
 uint32_t esp_random(void) { static uint32_t x = 12345; x = x * 1664525u + 1013904223u; return x; }
 
 /* ---- board ---- */
-float board_battery_volts(void) { return 3.95f; }
+float sim_volts = 3.95f;
+float board_battery_volts(void) { return sim_volts; }
 int board_battery_percent(void) { return sim_battery; }
 bool board_charging(void) { return sim_charging; }
 bool board_battery_present(void) { return sim_battery >= 0; }
@@ -73,6 +74,7 @@ void settings_save(void) {}
 void settings_mark(void) {}
 void settings_flush(void) {}
 void settings_reset(void) {}
+uint16_t *settings_interval(int f) { return f == 1 ? &g_set.disp_int_img_s : f == 2 ? &g_set.disp_int_anim_s : &g_set.disp_int_all_s; }
 
 /* ---- wifi ---- */
 wifi_state_t wifi_mgr_state(void) { return sim_wifi; }

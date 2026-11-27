@@ -11,6 +11,7 @@
 #include "wifi_mgr.h"
 
 extern int64_t sim_now_us;
+extern float sim_volts;
 extern int sim_battery, sim_charging, sim_boot_held, sim_pwr_held, sim_media, sim_ota_progress;
 extern bool sim_sd;
 extern wifi_state_t sim_wifi;
@@ -114,6 +115,9 @@ int main(int argc, char **argv)
     g_set.ota_auto = 1;
     g_set.disp_brightness = 70;
     g_set.disp_interval_s = 30;
+    g_set.disp_int_all_s = 10;
+    g_set.disp_int_img_s = 60;
+    g_set.disp_int_anim_s = 20;
     g_set.motion_wake = 1;
     g_set.night_from_h = 23;
     g_set.night_to_h = 7;
@@ -287,6 +291,21 @@ int main(int argc, char **argv)
     ev(EV_TAP, SCR_C, SCR_C);
     ev(EV_LONG_PRESS, SCR_C, SCR_C);                         // back to today
     ev(EV_BOOT_CLICK, 0, 0);
+
+    // battery under the power-off threshold: the 30 s warning
+    g_set.battery_off_pct = 20;
+    sim_battery = 18;
+    sim_volts = 3.62f;
+    run(25000);
+    shot("45_battery_off");
+    sim_charging = 1;   // the charger calls it off
+    run(1500);
+    sim_charging = 0;
+    sim_battery = 78;
+    sim_volts = 3.95f;
+    g_set.battery_off_pct = 3;
+    run(6000);
+    ev(EV_BOOT_LONG, 0, 0);
 
     g_set.lang = LANG_EN;
     g_set.accent = 2;

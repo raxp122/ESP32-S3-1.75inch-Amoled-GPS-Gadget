@@ -1,4 +1,5 @@
 // pendant.c - pendant (display) mode: one media in a loop or a slideshow, full screen.
+// The content setting limits it to images, or to GIFs and videos, each with its own interval.
 // Touch is off. BOOT: next media. BOOT held 2 s: back to the menus. PWR: screen off + lock.
 //
 // A player task decodes JPEG frames (esp_new_jpeg) into two full-screen buffers and pushes
@@ -68,9 +69,11 @@ static bool wait_until(int64_t t)
     return false;
 }
 
+// screen off (or a ring overlay): nothing is read or decoded meanwhile. With the panel dark
+// the check is slow, so the chip spends the time in light sleep.
 static void wait_drawable(void)
 {
-    while (!quit && !want_next && !can_draw()) vTaskDelay(pdMS_TO_TICKS(30));
+    while (!quit && !want_next && !can_draw()) vTaskDelay(pdMS_TO_TICKS(display_is_dark() ? 150 : 30));
 }
 
 // decodes jpg into the free buffer and shows it
@@ -96,7 +99,7 @@ static void play_image(const char *path, int64_t until)
     // a still image: nothing to do until the slideshow moves on (or the screen comes back)
     while (!quit && !want_next && (!until || now_ms() < until)) {
         if (!can_draw()) { wait_drawable(); if (can_draw() && shown >= 0) display_direct_push(frame[shown]); }
-        vTaskDelay(pdMS_TO_TICKS(40));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
@@ -118,24 +121,29 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
     }
     bool loop_done = false;
     int64_t due = now_ms();
-    power_boost_begin();   // animations decode all the time: full speed until they end
     for (uint32_t i = 0; !quit && !want_next; i = (i + 1) % info.frames) {
         if (i == 0 && loop_done && until && now_ms() >= until) break;   // slideshow: at least one full loop
+        if (!can_draw()) {   // screen off / ring overlay: stop here, read and decode nothing
+            wait_drawable();
+            if (quit || want_next) break;
+            due = now_ms();
+        }
+        // full speed only to read and decode the frame; the wait until it is due runs at the
+        // low clock (and in light sleep)
+        power_boost_begin();
         amj_frame_t fr;
         if (!amj_entry(index, i, size, &fr) || !ensure_in(fr.size) || fseek(f, fr.offset, SEEK_SET) ||
             fread(inbuf, 1, fr.size, f) != fr.size) {
+            power_boost_end();
             ESP_LOGW(TAG, "%s: frame %u unreadable", path, (unsigned)i);
             vTaskDelay(pdMS_TO_TICKS(200));
             break;
         }
         int k = shown == 0 ? 1 : 0;
-        if (!media_decode(inbuf, fr.size, frame[k], SCR_W, SCR_H)) continue;
-        if (!can_draw()) {   // screen off / ring overlay: no full speed while waiting
-            power_boost_end();
-            wait_drawable();
-            power_boost_begin();
-            due = now_ms();
-        }
+        bool ok = media_decode(inbuf, fr.size, frame[k], SCR_W, SCR_H);
+        power_boost_end();
+        if (!ok) continue;
+        if (!can_draw()) { wait_drawable(); due = now_ms(); }
         if (!wait_until(due)) break;
         show_frame(k);
         // late (slow card, big frame): do not try to catch up, just keep the rhythm
@@ -143,24 +151,63 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
         if (due < now_ms() - 200) due = now_ms();
         if (i == info.frames - 1) loop_done = true;
     }
-    power_boost_end();
     heap_caps_free(index);
     fclose(f);
 }
 
+// kinds of the media on the card, for the content filter (images / GIFs and videos / both)
+static uint8_t *kinds;
+static int kinds_len;
+static bool filter_warned;
+
+static bool fill_kinds(int n)
+{
+    if (n > kinds_len) {
+        free(kinds);
+        kinds = malloc(n);
+        kinds_len = kinds ? n : 0;
+        if (!kinds) return false;
+    }
+    for (int i = 0; i < n; i++) {
+        const media_item_t *m = media_get(i);
+        kinds[i] = m ? m->kind : MEDIA_NONE;
+    }
+    return true;
+}
+
+// the filter of the settings, or "everything" when no media passes it
+static int active_filter(int n)
+{
+    int f = g_set.disp_filter % MEDIA_FILTERS;
+    if (f != MEDIA_FILTER_ALL && media_filter_count(kinds, n, f) == 0) {
+        if (!filter_warned) { filter_warned = true; ui_toast_async(T(S_NO_MEDIA_FILTER)); }
+        f = MEDIA_FILTER_ALL;
+    }
+    return f;
+}
+
 static void player_task(void *arg)
 {
+    bool first = true;
     while (!quit) {
         int n = media_count();
-        if (!n) { vTaskDelay(pdMS_TO_TICKS(300)); continue; }
+        if (!n || !fill_kinds(n)) { vTaskDelay(pdMS_TO_TICKS(300)); continue; }
         if (cur >= n) cur = 0;
+        int filter = active_filter(n);
+        // a slideshow starts from the first media of the chosen kind; a single media chosen in
+        // the gallery is shown as it is
+        if (first && start_arg.slideshow) {
+            int c = media_pick_first(kinds, n, cur, filter);
+            if (c >= 0) cur = c;
+        }
+        first = false;
         const media_item_t *m = media_get(cur);
         char path[96];
         snprintf(path, sizeof(path), MEDIA_DIR "/%s", m->file);
         int kind = m->kind;
         uint32_t size = m->size;
         if (strcmp(g_set.disp_last, m->file)) { strlcpy(g_set.disp_last, m->file, sizeof(g_set.disp_last)); dirty_last = true; }
-        int64_t until = start_arg.slideshow ? now_ms() + g_set.disp_interval_s * 1000LL : 0;
+        int64_t until = start_arg.slideshow ? now_ms() + *settings_interval(filter) * 1000LL : 0;
         want_next = false;
         if (kind == MEDIA_ANIM) play_anim(path, size, until);
         else play_image(path, until);
@@ -169,7 +216,11 @@ static void player_task(void *arg)
         bool by_button = want_next;
         want_next = false;
         if (!start_arg.slideshow && !by_button) continue;   // single media: loop again
-        cur = start_arg.slideshow && g_set.disp_shuffle ? shuffle_next(cur, n, &seed) : (cur + 1) % n;
+        n = media_count();
+        if (!n || !fill_kinds(n)) continue;
+        filter = active_filter(n);
+        int next = media_pick_next(kinds, n, cur, filter, start_arg.slideshow && g_set.disp_shuffle, &seed);
+        cur = next >= 0 ? next : (cur + 1) % n;
     }
     running = false;
     xSemaphoreGive(done_sem);
@@ -197,6 +248,7 @@ static void enter(lv_obj_t *root, void *arg)
     cur = start_arg.start;
     seed = esp_random();
     quit = want_next = false;
+    filter_warned = false;
     grace_until = 0;
     was_off = false;
     power_motion_reset();

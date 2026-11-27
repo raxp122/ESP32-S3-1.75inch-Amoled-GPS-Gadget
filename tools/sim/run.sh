@@ -18,7 +18,7 @@ if [ ! -f obj/liblvgl.a ]; then
     wait
     ar rcs obj/liblvgl.a obj/*.o
 fi
-APPS="dice home gallery upload clock info quick settings_app keyboard wifi ota_app calendar"
+APPS="dice home gallery upload clock info quick settings_app keyboard wifi ota_app calendar battery_off"
 SRC="$M/ui.c $M/menu.c $M/i18n.c $M/core.c $M/power.c $M/fonts/*.c"
 for a in $APPS; do SRC="$SRC $M/apps/$a.c"; done
 gcc $CFLAGS -I$M -I$M/apps $SRC stubs.c sim_main.c obj/liblvgl.a -lm -o obj/sim

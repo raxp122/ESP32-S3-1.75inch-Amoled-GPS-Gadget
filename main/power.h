@@ -26,3 +26,7 @@ bool     power_battery_estimated(void);
 // a different battery: the fuel gauge starts over (a few seconds later, so the capacity dial
 // can be turned without a reset at every step); also done when the battery is plugged in again
 void     power_new_battery(void);
+// battery under the power-off threshold (Settings › Battery): seconds left before the power
+// off, -1 when none is coming; extend gives the user time (e.g. inside the settings)
+int      power_shutdown_in_s(void);
+void     power_shutdown_extend(int s);

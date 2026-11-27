@@ -98,7 +98,10 @@ from here*). Settings › Pendant:
 - *Plays*: *Single media* (BOOT for the next) or *Slideshow* (the gallery's tap / double tap
   set it too); an animation in a slideshow always finishes its loop before the next media
 - *Brightness* of the pendant (separate from the menus)
-- *Interval* of the slideshow (5 s to 30 min) and *Shuffle*
+- *Content*: *Images and videos*, *Images only* or *GIFs and videos only* (if the card has none
+  of that kind, everything is shown). It applies to the slideshow and to BOOT's next media.
+- An *Interval* for each content choice (5 s to 30 min): mixed 10 s, images 60 s, GIFs and
+  videos 20 s by default; and *Shuffle*
 - *Screen off after* (never, 5 min to 4 h) and *Wake on movement*: the timer counts from the last
   movement (IMU) and moving wakes the screen again
 - Settings › **Night**: from/to hours, dimmed or screen off at night (a button press keeps it on
@@ -187,8 +190,10 @@ Made for a small cell (default 500 mAh, set the real capacity in Settings › Ba
 
 - **Charger** at about 0.5 C for the set capacity; *Charge to 90 %* stops at 4.1 V instead of
   4.2 V, kinder to the cell.
-- **Protection**: warnings at 15 % and 7 %; at 3 % (and below 3.55 V) the pendant switches itself
-  off, leaving the cell its reserve. The PMU also cuts the power below 3.2 V on its own.
+- **Protection**: warnings at 15 % and 7 %. Under the *Power off below* threshold (3 % by
+  default, up to 50 %, or never) and without a charger, a screen says the pendant switches off
+  in 30 s to protect the battery; its button opens the setting. Plugging in the charger or
+  lowering the threshold calls it off. The PMU also cuts the power below 3.2 V on its own.
 - **Power saving** (on by default): the CPU runs at 80 MHz and goes into light sleep whenever
   nothing is happening, 240 MHz only while drawing or decoding. The AMOLED keeps a still picture
   on its own, so a photo in pendant mode costs little more than the screen. With the screen off
@@ -196,6 +201,9 @@ Made for a small cell (default 500 mAh, set the real capacity in Settings › Ba
 - **Wi-Fi only when needed** (on by default): the home connection pauses in pendant mode and
   after a minute with the screen off; it comes back by itself in the menus.
 - Inputs are polled less often when only the buttons matter (pendant mode, screen off).
+- **Pendant mode with the screen off** (PWR): the player stops reading and decoding until the
+  screen is back; locked, the IMU rests and the housekeeping timer runs once a second. With the
+  screen on, animations use full speed only to decode each frame.
 - **Percentage**: from the PMU fuel gauge. A gauge that has not learned the battery yet (a new
   cell) can be far off, so then the percentage comes from the voltage and shows a `~` (e.g.
   `~78%`) until the two agree. Changing the capacity in the settings, or plugging a battery in

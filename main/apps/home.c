@@ -106,6 +106,8 @@ static void sub_text(char *b, int n)
     case 0:
         if (!sd_ok()) snprintf(b, n, "%s", T(S_NO_SD));
         else if (!media_count()) snprintf(b, n, "%s", T(S_NO_MEDIA_SHORT));
+        else if (g_set.disp_slideshow && g_set.disp_filter != MEDIA_FILTER_ALL)
+            snprintf(b, n, "%s", T(g_set.disp_filter == MEDIA_FILTER_IMAGES ? S_FILTER_IMAGES : S_FILTER_ANIM));
         else snprintf(b, n, "%s", T(g_set.disp_slideshow ? S_SLIDESHOW : S_SINGLE_MEDIA));
         break;
     case 1:

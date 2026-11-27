@@ -5,6 +5,20 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Battery: a fuel gauge stuck near 0 % (not learned the battery yet) is always replaced by the
+  voltage estimate, even on a half-empty cell.
+- Settings › Battery › Power off below: never, 3 % (default) up to 50 %. Under it, without a
+  charger, for two checks in a row, a screen says the pendant switches off in 30 s to protect
+  the battery, with a button straight to the setting (one more minute to choose). Plugging in
+  the charger or lowering the threshold calls it off.
+- Pendant, battery: with the screen off nothing is read or decoded and the player checks only
+  every 150 ms; animations run at full CPU speed only while reading and decoding each frame
+  (the wait until the next frame is at the low clock / light sleep); a still image is checked
+  every 100 ms instead of 40. Locked with PWR, the IMU is not read and the UI housekeeping
+  timer runs once a second instead of five times.
+- Pendant: *Content* setting (images and videos / images only / GIFs and videos only) and a
+  slideshow interval for each (default 10 s, 60 s, 20 s). BOOT's next media follows the content
+  too; a media opened from the gallery is still shown as chosen.
 - Calendar: the rings now turn with the bezel (later days, months and years sit
   counter-clockwise, so turning clockwise brings them to the window); before they ran the
   other way. Swipe down now moves the active ring inwards (days → months → years), as the

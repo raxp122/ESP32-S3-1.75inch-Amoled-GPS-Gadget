@@ -155,6 +155,7 @@ int battery_percent_pick(int gauge, float v, bool charging, bool *estimated)
     // while charging the voltage reads high (4.1-4.2 V even half full): only a gauge stuck at
     // zero is replaced then
     else if (charging) { est_used = gauge <= 2 && est > 10; r = est_used ? est : gauge; }
+    else if (gauge <= 5 && est >= 15) { r = est; est_used = true; }   // a gauge stuck near zero
     else {
         // hysteresis: the gauge takes over again only once it is close to the voltage estimate
         int d = abs(gauge - est);
@@ -171,6 +172,49 @@ int shuffle_next(int cur, int count, uint32_t *seed)
     *seed = *seed * 1664525u + 1013904223u;
     int n = (int)((*seed >> 8) % (uint32_t)(count - 1));
     return n >= cur ? n + 1 : n;
+}
+
+bool media_filter_ok(int kind, int filter)
+{
+    if (filter == MEDIA_FILTER_IMAGES) return kind == MEDIA_IMAGE;
+    if (filter == MEDIA_FILTER_ANIM) return kind == MEDIA_ANIM;
+    return kind == MEDIA_IMAGE || kind == MEDIA_ANIM;
+}
+
+int media_filter_count(const uint8_t *kinds, int n, int filter)
+{
+    int c = 0;
+    for (int i = 0; i < n; i++) c += media_filter_ok(kinds[i], filter);
+    return c;
+}
+
+int media_pick_first(const uint8_t *kinds, int n, int start, int filter)
+{
+    if (n <= 0) return -1;
+    if (start < 0 || start >= n) start = 0;
+    for (int k = 0; k < n; k++) {
+        int i = (start + k) % n;
+        if (media_filter_ok(kinds[i], filter)) return i;
+    }
+    return -1;
+}
+
+int media_pick_next(const uint8_t *kinds, int n, int cur, int filter, bool shuffle, uint32_t *seed)
+{
+    int m = media_filter_count(kinds, n, filter);
+    if (!m) return -1;
+    if (cur < 0 || cur >= n) cur = n - 1;
+    if (!shuffle || m == 1) return media_pick_first(kinds, n, (cur + 1) % n, filter);
+    // position of cur among the matching media (-1: it does not match)
+    int pos = -1, j = 0;
+    for (int i = 0; i < n; i++)
+        if (media_filter_ok(kinds[i], filter)) { if (i == cur) pos = j; j++; }
+    int pick;
+    if (pos >= 0) pick = shuffle_next(pos, m, seed);
+    else { *seed = *seed * 1664525u + 1013904223u; pick = (int)((*seed >> 8) % (uint32_t)m); }
+    for (int i = 0, k = 0; i < n; i++)
+        if (media_filter_ok(kinds[i], filter) && k++ == pick) return i;
+    return -1;
 }
 
 /* ---------------- dice ---------------- */
