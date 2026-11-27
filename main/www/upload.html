@@ -36,6 +36,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .item .th{width:100%;aspect-ratio:1;border-radius:50%;background:#000 center/cover;border:1px solid var(--line);position:relative}
 .item .th b{position:absolute;right:-2px;bottom:-2px;background:var(--card);border:1px solid var(--line);color:var(--acc);border-radius:10px;font-size:.7rem;padding:1px 6px}
 .item button{margin-top:6px;padding:6px;font-size:.78rem;background:transparent;border:1px solid var(--line);color:var(--warn);border-radius:10px}
+.item button.armed{background:var(--warn);color:#1a0705;border-color:var(--warn)}
 .hidden{display:none!important}
 small{color:var(--dim)}
 </style>
@@ -74,7 +75,7 @@ small{color:var(--dim)}
         <div><label data-t="quality"></label><select id="q"><option value="0.6" data-t="qLow"></option><option value="0.72" selected data-t="qMid"></option><option value="0.85" data-t="qHigh"></option></select></div>
       </div>
     </div>
-    <label data-t="name"></label><input type="text" id="name" maxlength="40">
+    <label data-t="name"></label><input type="text" id="name" maxlength="40" enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false">
     <div class="row" style="margin-top:16px"><button class="ghost" id="skip" data-t="skip"></button><button id="send" data-t="send"></button></div>
     <div id="prog" class="hidden"><div class="bar"><div id="barIn"></div></div><div class="hint" id="progT"></div></div>
   </div>
@@ -97,7 +98,7 @@ const TX = {
   zoom: ["Zoom", "Zoom"], start: ["Start", "Inizio"], length: ["Length", "Durata"], fps: ["Frames per second", "Fotogrammi al secondo"],
   quality: ["Quality", "Qualità"], qLow: ["Light", "Leggera"], qMid: ["Balanced", "Bilanciata"], qHigh: ["High", "Alta"],
   name: ["Name", "Nome"], skip: ["Skip", "Salta"], send: ["Send to pendant", "Invia al ciondolo"],
-  onDevice: ["On the pendant", "Sul ciondolo"], del: ["Delete", "Elimina"], delAsk: ["Delete %s?", "Eliminare %s?"],
+  onDevice: ["On the pendant", "Sul ciondolo"], del: ["Delete", "Elimina"], delSure: ["Sure? Tap again", "Sicuro? Tocca ancora"], delFailed: ["Not deleted, retry", "Non eliminato, riprova"],
   converting: ["Converting frame %a of %b…", "Converto il fotogramma %a di %b…"], sending: ["Sending… %a%", "Invio… %a%"],
   done: ["Sent ✓", "Inviato ✓"], failed: ["Failed: %s", "Non riuscito: %s"], noSd: ["No microSD in the pendant", "Nessuna microSD nel ciondolo"],
   free: ["%a GB free", "%a GB liberi"], items: ["%a media", "%a media"], of: ["%a of %b", "%a di %b"],
@@ -149,9 +150,21 @@ async function loadList() {
     n.textContent = m.f.replace(/\.[^.]+$/, "").replace(/_/g, " ");
     const del = document.createElement("button");
     del.textContent = t("del");
+    // two taps: the first one asks (no confirm(): the mini browser that opens on the
+    // pendant's hotspot answers it with "cancel" without even showing it)
+    let armed = 0;
     del.onclick = async () => {
-      if (!confirm(t("delAsk", n.textContent))) return;
-      await api("/api/delete?f=" + encodeURIComponent(m.f), {method: "POST"});
+      if (!armed) {
+        del.textContent = t("delSure");
+        del.classList.add("armed");
+        armed = setTimeout(() => { armed = 0; del.textContent = t("del"); del.classList.remove("armed"); }, 4000);
+        return;
+      }
+      clearTimeout(armed);
+      del.disabled = true;
+      del.textContent = "\u2026";
+      const r = await api("/api/delete?f=" + encodeURIComponent(m.f), {method: "POST"}).catch(() => null);
+      if (!r || !r.ok) { del.disabled = false; armed = 0; del.textContent = t("delFailed"); return; }
       loadList(); loadInfo();
     };
     d.append(th, n, del);
@@ -176,7 +189,14 @@ async function tryPin(v) {
   if (r.ok) { sessionStorage.setItem("pin", v); showMain(); }
   else { $("pinErr").textContent = t("pinWrong"); pins.forEach(p => p.value = ""); pins[0].focus(); }
 }
-function showMain() { $("pinCard").classList.add("hidden"); $("main").classList.remove("hidden"); loadList(); }
+function showMain()
+{
+  pins.forEach(p => p.blur());   // a focused (now hidden) PIN box kept opening the keyboard
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  $("pinCard").classList.add("hidden");
+  $("main").classList.remove("hidden");
+  loadList();
+}
 
 /* ---------------- GIF decoder (frames with delays, disposal handled) ---------------- */
 function decodeGif(buf) {
@@ -352,6 +372,7 @@ function safeName(n) {
 }
 
 async function openFile(f) {
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   $("editor").classList.remove("hidden");
   $("prog").classList.add("hidden");
   $("send").disabled = $("skip").disabled = false;
@@ -389,7 +410,11 @@ async function openFile(f) {
       const bmp = await createImageBitmap(f);
       src = bmp; srcW = bmp.width; srcH = bmp.height;
     }
-  } catch (e) { alert(t("unsupported") + "\n" + f.name); return nextFile(); }
+  } catch (e) {
+    progress(0, t("unsupported") + ": " + f.name);
+    setTimeout(nextFile, 2500);
+    return;
+  }
   fit(); redraw();
   startPreview();
 }
@@ -523,6 +548,7 @@ function nextFile() {
 $("pick").onclick = () => $("file").click();
 $("file").onchange = e => { files = [...e.target.files]; fileIdx = 0; if (files.length) openFile(files[0]); };
 $("send").onclick = send;
+$("name").addEventListener("keydown", e => { if (e.key == "Enter") { e.preventDefault(); $("name").blur(); } });
 $("skip").onclick = nextFile;
 
 loadInfo().catch(() => {});
