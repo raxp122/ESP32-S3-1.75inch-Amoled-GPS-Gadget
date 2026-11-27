@@ -131,14 +131,20 @@ static void a_doff(int d) { g_set.disp_off_min = step_list(off_vals, 8, g_set.di
 static void v_motion(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.motion_wake)); }
 static void s_motion(void) { g_set.motion_wake = !g_set.motion_wake; settings_mark(); }
 
+// what the Pendant app plays: one media (BOOT for the next) or all of them in turn. The gallery
+// sets it too (tap: one media, double tap: slideshow).
+static void v_pmode(char *b, int n) { snprintf(b, n, "%s", T(g_set.disp_slideshow ? S_SLIDESHOW : S_SINGLE_MEDIA)); }
+static void s_pmode(void) { g_set.disp_slideshow = !g_set.disp_slideshow; settings_mark(); }
+
 static const menu_item_t pendant_items[] = {
+    {IC_PLAY, S_PENDANT_MODE, NULL, v_pmode, s_pmode},
     {IC_SUN, S_BRIGHTNESS, NULL, v_dbright, NULL, a_dbright},
-    {IC_PLAY, S_INTERVAL, NULL, v_interval, NULL, a_interval},
+    {IC_SYNC, S_INTERVAL, NULL, v_interval, NULL, a_interval},
     {IC_SHUFFLE, S_SHUFFLE, NULL, v_shuffle, s_shuffle},
     {IC_HOURGLASS, S_PENDANT_OFF, NULL, v_doff, NULL, a_doff},
     {IC_WALK, S_MOTION_WAKE, NULL, v_motion, s_motion},
 };
-static menu_t pendant_menu = {S_APP_PENDANT, pendant_items, 5, 0};
+static menu_t pendant_menu = {S_APP_PENDANT, pendant_items, 6, 0};
 
 /* ---------------- Night ---------------- */
 

@@ -159,6 +159,7 @@ typedef enum {
     S_CAL_DAYS_AGO,
     S_CAL_NEXT,
     S_CAL_WEEK,
+    S_PENDANT_MODE,
     S_COUNT
 } str_t;
 

@@ -156,6 +156,7 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_CAL_IN_DAYS] = {"tra %d giorni", "in %d days"},
     [S_CAL_DAYS_AGO] = {"%d giorni fa", "%d days ago"},
     [S_CAL_NEXT] = {"Prossimo festivo: %s, tra %d g", "Next holiday: %s, in %d d"},
+    [S_PENDANT_MODE] = {"Riproduzione", "Plays"},
     [S_CAL_WEEK] = {"Settimana %d \xC2\xB7 giorno %d di %d", "Week %d \xC2\xB7 day %d of %d"},
 };
 

@@ -5,6 +5,9 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Settings › Pendant › Plays: *Single media* (BOOT for the next one) or *Slideshow* (every media
+  in turn, after the interval; an animation always plays to the end of a loop first). Before,
+  only the gallery could switch it (tap / double tap), so the interval seemed to do nothing.
 - Calendar app: days, months and years on three concentric rings with a window at 12 o'clock,
   the bezel turns the active ring (months and years follow), swipe changes it, tap on the date
   opens the day page, long press goes back to today. Italian national holidays (Easter computed,

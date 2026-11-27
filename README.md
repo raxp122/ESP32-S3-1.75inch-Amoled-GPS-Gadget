@@ -95,6 +95,8 @@ Full screen, the touch is off (it rubs against clothes), only the buttons work:
 Either **one media in a loop** (tap in the gallery) or a **slideshow** (double tap, or *Slideshow
 from here*). Settings › Pendant:
 
+- *Plays*: *Single media* (BOOT for the next) or *Slideshow* (the gallery's tap / double tap
+  set it too); an animation in a slideshow always finishes its loop before the next media
 - *Brightness* of the pendant (separate from the menus)
 - *Interval* of the slideshow (5 s to 30 min) and *Shuffle*
 - *Screen off after* (never, 5 min to 4 h) and *Wake on movement*: the timer counts from the last
