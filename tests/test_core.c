@@ -217,13 +217,24 @@ static void test_battery(void)
     CHECK(battery_percent_from_volts(0) == 0);
     for (float v = 3.2f; v < 4.25f; v += 0.01f)   // never goes down while the voltage goes up
         CHECK(battery_percent_from_volts(v + 0.01f) >= battery_percent_from_volts(v));
-    CHECK(battery_percent_pick(0, 4.09f, false) == 94);    // new battery, gauge not learned yet
-    CHECK(battery_percent_pick(-1, 3.78f, false) == 50);   // no gauge reading
-    CHECK(battery_percent_pick(85, 4.09f, false) == 85);   // gauge plausible: the gauge wins
-    CHECK(battery_percent_pick(40, 4.15f, true) == 40);    // charging: high voltage is expected
-    CHECK(battery_percent_pick(5, 3.50f, false) == 5);     // really low: the gauge wins
-    CHECK(battery_percent_pick(70, 0, false) == 70);       // no voltage
-    CHECK(battery_percent_pick(0, 4.12f, true) == 97);     // charging, gauge stuck at zero
+    CHECK(battery_percent_pick(0, 4.09f, false, NULL) == 94);    // new battery, gauge not learned yet
+    CHECK(battery_percent_pick(-1, 3.78f, false, NULL) == 50);   // no gauge reading
+    CHECK(battery_percent_pick(85, 4.09f, false, NULL) == 85);   // gauge plausible: the gauge wins
+    CHECK(battery_percent_pick(40, 4.15f, true, NULL) == 40);    // charging: high voltage is expected
+    CHECK(battery_percent_pick(5, 3.50f, false, NULL) == 5);     // really low: the gauge wins
+    CHECK(battery_percent_pick(70, 0, false, NULL) == 70);       // no voltage
+    CHECK(battery_percent_pick(0, 4.12f, true, NULL) == 97);     // charging, gauge stuck at zero
+    bool e = false;
+    CHECK(battery_percent_pick(85, 4.09f, false, &e) == 85 && !e);   // the gauge: not estimated
+    CHECK(battery_percent_pick(0, 4.09f, false, &e) == 94 && e);     // the estimate: flagged
+    CHECK(battery_percent_pick(70, 4.09f, false, &e) == 94 && e);    // 24 apart: still the estimate
+    CHECK(battery_percent_pick(82, 4.09f, false, &e) == 82 && !e);   // within 15: the gauge again
+    e = false;
+    CHECK(battery_percent_pick(70, 4.09f, false, &e) == 70 && !e);   // 24 apart from the gauge: kept
+    e = true;
+    CHECK(battery_percent_pick(40, 4.15f, true, &e) == 40 && !e);    // charging: the gauge
+    CHECK(battery_percent_pick(-1, 3.78f, false, &e) == 50 && e);    // no gauge: estimated
+    CHECK(battery_percent_pick(70, 0, false, &e) == 70 && !e);       // no voltage
 }
 
 int main(void)

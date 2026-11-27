@@ -146,6 +146,7 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_DH_WITH_FEAR] = {"con Paura", "with Fear"},
     [S_DH_CRIT] = {"CRITICO!", "CRITICAL!"},
     [S_HOME_SHORTCUT] = {"Scorciatoia in basso", "Shortcut at the bottom"},
+    [S_CLOCK_ON] = {"Orologio sempre acceso", "Clock always on"},
 };
 
 const char *T(int id)

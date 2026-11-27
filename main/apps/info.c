@@ -16,7 +16,8 @@ static void v_battery(char *b, int n)
     int p = power_battery_percent();
     float v = board_battery_volts();
     if (p < 0) snprintf(b, n, "%s", T(S_NO_BATTERY));
-    else snprintf(b, n, "%d%%  ·  %.2f V%s", p, v, power_charging() ? "  " IC_BOLT : "");
+    else snprintf(b, n, "%s%d%%  ·  %.2f V%s", power_battery_estimated() ? "~" : "", p, v,
+                  power_charging() ? "  " IC_BOLT : "");
 }
 static void v_power(char *b, int n) { snprintf(b, n, "%s", T(board_usb_power() ? S_POWER_USB : S_POWER_BATTERY)); }
 static void v_sd(char *b, int n)

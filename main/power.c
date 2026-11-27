@@ -30,10 +30,19 @@ static vec3_t prev;
 static bool have_prev;
 static int warned;   // lowest battery warning shown: 0, 15, 7
 static int bat_pct = -1;
-static bool bat_chg;
+static bool bat_chg, bat_est, bat_present;
+static int new_battery_in;   // ticks until the fuel gauge reset (0 = none pending)
 
 int power_battery_percent(void) { return bat_pct; }
 bool power_charging(void) { return bat_chg; }
+bool power_battery_estimated(void) { return bat_pct >= 0 && bat_est; }
+void power_new_battery(void) { new_battery_in = 15; }   // 3 s
+
+static void battery_read(void)
+{
+    bat_chg = board_charging();
+    bat_pct = battery_percent_pick(board_battery_percent(), board_battery_volts(), bat_chg, &bat_est);
+}
 
 void power_init(void)
 {
@@ -50,8 +59,8 @@ void power_init(void)
     }
 #endif
     usb = board_usb_power();
-    bat_chg = board_charging();
-    bat_pct = battery_percent_pick(board_battery_percent(), board_battery_volts(), bat_chg);
+    bat_present = board_battery_present();
+    battery_read();
     power_apply();
 }
 
@@ -84,7 +93,8 @@ static void battery_check(void)
     if (board_charging() || usb) { warned = 0; return; }
     float v = board_battery_volts();
     if (v <= 0) return;   // no battery (USB only)
-    int p = battery_percent_pick(board_battery_percent(), v, false);
+    bool e = bat_est;
+    int p = battery_percent_pick(board_battery_percent(), v, false, &e);
     // almost empty: switch off while the cell still has its reserve (a LiPo should not be
     // drained below ~3.4-3.5 V at rest); the voltage check filters out a confused gauge
     if (p <= 3 && v > 0 && v < 3.55f) {
@@ -120,11 +130,18 @@ void power_tick(void)
     if (n % 5 == 0) {   // every second: USB plugged in or out
         bool u = board_usb_power();
         if (u != usb) { usb = u; power_apply(); }
+        // a battery plugged in while on USB: a different one, maybe
+        bool b = board_battery_present();
+        if (b && !bat_present) power_new_battery();
+        bat_present = b;
     }
-    if (n % 25 == 0) {   // every 5 s; a gauge that has not learned the battery yet is corrected
-        bat_chg = board_charging();
-        bat_pct = battery_percent_pick(board_battery_percent(), board_battery_volts(), bat_chg);
+    if (new_battery_in && --new_battery_in == 0) {
+        board_gauge_reset();
+        bat_est = true;   // the voltage until the gauge agrees with it again
+        warned = 0;
     }
+    // every 5 s; a gauge that has not learned the battery yet is corrected
+    if (n % 25 == 0) battery_read();
     if (n % 50 == 1) battery_check();   // every 10 s
 }
 

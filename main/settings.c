@@ -42,6 +42,7 @@ static void defaults(settings_t *s)
     s->battery_mah = 500;
     s->battery_care = 0;
     s->home_shortcut = HOME_SHORTCUT_DEFAULT;
+    s->clock_on = 1;
 }
 
 void settings_load(void)

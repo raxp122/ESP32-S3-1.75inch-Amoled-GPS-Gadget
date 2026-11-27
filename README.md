@@ -172,6 +172,14 @@ Made for a small cell (default 500 mAh, set the real capacity in Settings › Ba
 - **Wi-Fi only when needed** (on by default): the home connection pauses in pendant mode and
   after a minute with the screen off; it comes back by itself in the menus.
 - Inputs are polled less often when only the buttons matter (pendant mode, screen off).
+- **Percentage**: from the PMU fuel gauge. A gauge that has not learned the battery yet (a new
+  cell) can be far off, so then the percentage comes from the voltage and shows a `~` (e.g.
+  `~78%`) until the two agree. Changing the capacity in the settings, or plugging a battery in
+  while on USB, restarts the gauge for the new cell.
+- **Clock always on** (Settings › Screen, on by default): the clock app keeps the screen on, mostly
+  black so it costs little; untouched it dims, stops the seconds ring and pauses the Wi-Fi. The
+  digits move a few pixels every minute so they do not burn into the panel. Touch only brings
+  it back to full brightness (no swipe back): BOOT leaves the clock.
 
 What uses most is the screen itself (brightness and how much of the picture is lit: black is
 free on an AMOLED) and animations, which decode JPEG frames all the time.
