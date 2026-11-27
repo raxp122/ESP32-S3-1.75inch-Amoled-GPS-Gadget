@@ -19,6 +19,12 @@ What AmuletOS may get next. Nothing here is promised; the order is decided one a
   poison), the circle split in sectors.
 - **Bubble level**: like the other gadget, a tap calibrates; flat side only (one face).
 
+- **Calendar** (offline, no account for now): days, weeks, Italian national holidays (fixed ones
+  plus Easter and Easter Monday computed), name day of the saint, day of the year, ISO week,
+  days until a date or the next holiday. A view made for the circle, e.g. the days of the month
+  as a ring along the rim with the bezel as a cursor and the details in the middle, a rolling
+  drum of days, and a year ring (the "wheel of the year" idea below).
+
 ## Later (needs the GPS)
 
 - **Saved places**: save a spot, distance and direction back to it.
