@@ -35,6 +35,9 @@ void input_set_touch(bool enabled);
 bool input_touch_enabled(void);
 // screens that use the double tap: single taps are delayed until the double-tap window ends
 void input_set_double_tap(bool wanted);
+// polling period: 12 ms with the touch in use, slower with only the buttons to watch
+// (pendant mode, screen off): every wake-up costs battery
+void input_set_poll_ms(int ms);
 uint32_t input_idle_ms(void);             // since the last touch or button
 void input_mark_activity(void);
 int  input_boot_held_ms(void);            // 0 when not pressed (or already fired)

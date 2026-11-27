@@ -2,6 +2,7 @@
 #include "ui.h"
 #include "board.h"
 #include "ota.h"
+#include "power.h"
 #include "settings.h"
 #include "wifi_mgr.h"
 #include <stdio.h>
@@ -52,13 +53,49 @@ static void v_sleep(char *b, int n)
 }
 static void a_sleep(int d) { g_set.sleep_s = step_list(sleep_vals, 7, g_set.sleep_s, d); settings_mark(); }
 
+static void v_homeloop(char *b, int n) { snprintf(b, n, "%s", T(g_set.home_loop ? S_HOME_LOOP : S_HOME_STOP)); }
+static void a_homeloop(int d) { g_set.home_loop = !g_set.home_loop; settings_mark(); }
+
 static const menu_item_t screen_items[] = {
     {IC_SUN, S_BRIGHTNESS, NULL, v_bright, NULL, a_bright},
     {IC_ROTATE, S_ROTATION, NULL, v_rot, NULL, a_rot},
     {IC_PALETTE, S_ACCENT, NULL, v_accent, NULL, a_accent},
     {IC_HOURGLASS, S_AUTO_OFF, NULL, v_sleep, NULL, a_sleep},
+    {IC_HOME, S_HOME_LIST, NULL, v_homeloop, NULL, a_homeloop},
 };
-static menu_t screen_menu = {S_SET_SCREEN, screen_items, 4, 0};
+static menu_t screen_menu = {S_SET_SCREEN, screen_items, 5, 0};
+
+/* ---------------- Battery ---------------- */
+
+static const int mah_vals[] = {150, 200, 250, 300, 400, 500, 600, 800, 1000, 1200, 1500, 2000};
+static void v_mah(char *b, int n) { snprintf(b, n, "%d mAh", g_set.battery_mah); }
+static void a_mah(int d)
+{
+    g_set.battery_mah = step_list(mah_vals, 12, g_set.battery_mah, d);
+    board_battery_setup(g_set.battery_mah, g_set.battery_care);
+    settings_mark();
+}
+static void v_care(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.battery_care)); }
+static void s_care(void)
+{
+    g_set.battery_care = !g_set.battery_care;
+    board_battery_setup(g_set.battery_mah, g_set.battery_care);
+    settings_mark();
+}
+static void v_psave(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.power_save)); }
+static void s_psave(void) { g_set.power_save = !g_set.power_save; power_apply(); settings_mark(); }
+static void v_wsave(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.wifi_save)); }
+static void s_wsave(void) { g_set.wifi_save = !g_set.wifi_save; settings_mark(); }
+static void v_batnow(char *b, int n) { ui_battery_icon(b, n); }
+
+static const menu_item_t battery_items[] = {
+    {IC_BAT_FULL, S_INFO_BATTERY, NULL, v_batnow},
+    {IC_BOLT, S_POWER_SAVE, NULL, v_psave, s_psave},
+    {IC_WIFI, S_WIFI_SAVE, NULL, v_wsave, s_wsave},
+    {IC_BAT_3, S_BATT_CAPACITY, NULL, v_mah, NULL, a_mah},
+    {IC_HEART, S_BATT_CARE, NULL, v_care, s_care},
+};
+static menu_t battery_menu = {S_SET_BATTERY, battery_items, 5, 0};
 
 /* ---------------- Pendant ---------------- */
 
@@ -178,11 +215,12 @@ static const menu_item_t top_items[] = {
     {IC_SUN, S_SET_SCREEN, NULL, v_screen, NULL, NULL, &scr_menu, &screen_menu},
     {IC_GEM, S_APP_PENDANT, NULL, v_pendant, NULL, NULL, &scr_menu, &pendant_menu},
     {IC_MOON, S_SET_NIGHT, NULL, v_night_sum, NULL, NULL, &scr_menu, &night_menu},
+    {IC_BAT_FULL, S_SET_BATTERY, NULL, v_batnow, NULL, NULL, &scr_menu, &battery_menu},
     {IC_DOWNLOAD, S_SET_UPDATES, NULL, v_ver, NULL, NULL, &scr_menu, &ota_menu},
     {IC_LANG, S_LANGUAGE, NULL, v_lang, NULL, a_lang},
     {IC_GLOBE, S_TIMEZONE, NULL, v_tz, NULL, a_tz},
     {IC_CHIP, S_SET_SYSTEM, NULL, NULL, NULL, NULL, &scr_menu, &sys_menu},
 };
-static menu_t top_menu = {S_APP_SETTINGS, top_items, 8, 0};
+static menu_t top_menu = {S_APP_SETTINGS, top_items, sizeof(top_items) / sizeof(top_items[0]), 0};
 
 MENU_SCREEN(scr_settings, "settings", &top_menu);

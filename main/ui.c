@@ -5,6 +5,7 @@
 #include "power.h"
 #include "settings.h"
 #include "wifi_mgr.h"
+#include "esp_timer.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -118,10 +119,10 @@ void ui_time_str(char *b, int n)
 
 void ui_battery_icon(char *b, int n)
 {
-    int p = board_battery_percent();
+    int p = power_battery_percent();
     if (p < 0) { snprintf(b, n, IC_BOLT); return; }
     const char *ic = p > 85 ? IC_BAT_FULL : p > 60 ? IC_BAT_3 : p > 35 ? IC_BAT_2 : p > 12 ? IC_BAT_1 : IC_BAT_0;
-    snprintf(b, n, "%s%s %d%%", board_charging() ? IC_BOLT " " : "", ic, p);
+    snprintf(b, n, "%s%s %d%%", power_charging() ? IC_BOLT " " : "", ic, p);
 }
 
 /* ---------------- overlays ---------------- */
@@ -224,8 +225,8 @@ static void status_update(void)
     lv_obj_remove_flag(status_lbl, LV_OBJ_FLAG_HIDDEN);
     char t[16], b[48];
     ui_time_str(t, sizeof(t));
-    int p = board_battery_percent();
-    if (board_charging()) snprintf(b, sizeof(b), "%s  " IC_BOLT, t);
+    int p = power_battery_percent();
+    if (power_charging()) snprintf(b, sizeof(b), "%s  " IC_BOLT, t);
     else if (p >= 0 && p <= 15) snprintf(b, sizeof(b), "%s  " IC_BAT_0, t);
     else snprintf(b, sizeof(b), "%s", t);
     ui_set_text(status_lbl, b);
@@ -321,7 +322,9 @@ static void build(void)
     input_set_double_tap(s->flags & SCR_DTAP);
     touch_policy();
     s->enter(scr, stack[depth - 1].arg);
-    lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_FADE_IN, 140, 0, true);
+    // straight switch: a fade redraws the whole screen for several frames (tearing on this
+    // panel, and battery)
+    lv_screen_load_anim(scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
     status_update();
 }
 
@@ -392,9 +395,29 @@ static void on_event(ev_t e, int x, int y)
     if (e == EV_BOOT_LONG) { ui_home(); return; }
 }
 
+static lv_timer_t *hold_timer;
+static int64_t off_since_us;
+
+// Battery: how often the inputs are polled and whether the Wi-Fi may sleep
+static void power_policy(void)
+{
+    const screen_t *s = ui_current();
+    bool pendant = s == &scr_pendant;
+    int64_t now = esp_timer_get_time();
+    if (!off) off_since_us = 0;
+    else if (!off_since_us) off_since_us = now;
+    input_set_poll_ms(off ? 60 : (s && (s->flags & SCR_NO_TOUCH)) ? 30 : 12);
+    lv_timer_set_period(hold_timer, off ? 120 : 40);
+    // the home Wi-Fi is not needed while worn, nor with the screen off for a minute; the
+    // pages that use it (upload, Wi-Fi, updates) have the screen on and bring it back
+    bool idle_off = off && now - off_since_us > 60LL * 1000 * 1000;
+    wifi_mgr_set_suspend(g_set.wifi_save && (pendant || idle_off));
+}
+
 static void tick_cb(lv_timer_t *t)
 {
-    power_poll();
+    power_policy();
+    power_tick();
     if (toast_flag) { toast_flag = false; ui_toast(toast_pending); }
     if (toast_until && (int32_t)(lv_tick_get() - toast_until) > 0) {
         toast_until = 0;
@@ -416,6 +439,6 @@ void ui_init(void)
     overlays_create();
     input_init(on_event);
     lv_timer_create(tick_cb, 200, NULL);
-    lv_timer_create(hold_cb, 40, NULL);
+    hold_timer = lv_timer_create(hold_cb, 40, NULL);
     ui_push(&scr_home, NULL);
 }

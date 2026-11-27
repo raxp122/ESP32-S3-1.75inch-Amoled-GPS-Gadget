@@ -5,6 +5,24 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Battery: settings for the capacity (charge current at ~0.5 C) and charge to 90 %; warnings
+  at 15 % and 7 %, power off at 3 %; PMU cut-off at 3.2 V.
+- Power saving: CPU frequency scaling (80-240 MHz) with automatic light sleep, panel sleep with
+  the screen off, LVGL tick without a 2 ms timer, slower input polling when only the buttons
+  matter, Wi-Fi paused in pendant mode and with the screen off. Lower default brightness and
+  menu timeout.
+- Launcher: endless ring with a horizon at the bottom where apps fade out and come back from
+  the other side; "App list" setting to loop or stop at the ends. The icons follow the finger
+  (no more jump of the app on the back of the ring).
+- No LVGL transforms, whole-object opacity or screen fades any more (extra layers: they tore on
+  the panel and cost CPU): gallery previews are made round and small once in memory, the die
+  rattles instead of spinning.
+- Dice: the bezel follows the finger along the die types.
+- Upload page: GIFs and videos play while you crop them, the whole picture is visible with the
+  part outside the circle dimmed; GIFs are decoded by the browser itself when it can, and the
+  built-in decoder no longer paints missing pixels of a damaged frame (half-coloured frames).
+
+
 - Dice app for D&D: d4 to d100 on the bezel, up to 20 dice, modifier, advantage /
   disadvantage, natural 20 / natural 1 highlighted, tap or shake to roll, saved rolls,
   history of the last 30 rolls, ability scores (4d6 drop the lowest, with modifiers).

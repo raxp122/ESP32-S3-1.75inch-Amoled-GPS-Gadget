@@ -122,6 +122,8 @@ int main(int argc, char **argv)
     strcpy(g_set.wifi_ssid, "Casa");
     g_set.dice = (dice_spec_t){1, 20, 0, 0, 0};
     g_set.dice_shake = 1;
+    g_set.home_loop = 1;
+    g_set.battery_mah = 500;
     report = fopen("out/layout-report.md", "w");
     fprintf(report, "# Layout report\n\nText outside the round screen (466 px circle):\n\n");
 
@@ -135,6 +137,15 @@ int main(int argc, char **argv)
     ui_init();
 
     shot("01_home");
+    sim_handler(EV_DIAL_CW, 400, 200);
+    run(90);
+    shot("02_home_turning");
+    run(400);
+    g_set.home_loop = 0;
+    for (int i = 0; i < A_COUNT; i++) ev(EV_DIAL_CCW, 400, 200);   // stops at the first app
+    home_sel = 0;
+    shot("02b_home_stop_mode");
+    g_set.home_loop = 1;
     open_app(A_GALLERY);
     shot("03_gallery");
     ev(EV_LONG_PRESS, SCR_C, SCR_C);
@@ -185,7 +196,7 @@ int main(int argc, char **argv)
     shot("18_info");
     sim_ota = OTA_AVAILABLE;
     open_app(A_SETTINGS);
-    for (int i = 0; i < 4; i++) ev(EV_DIAL_CW, 400, 200);
+    for (int i = 0; i < 5; i++) ev(EV_DIAL_CW, 400, 200);
     ev(EV_TAP, SCR_C, SCR_C);   // updates
     ev(EV_TAP, SCR_C, SCR_C);   // firmware
     shot("19_ota_available");
@@ -213,10 +224,10 @@ int main(int argc, char **argv)
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("32_dice_advantage");
-    ev(EV_DIAL_CCW, 400, 200);         // d12
-    ev(EV_DIAL_CCW, 400, 200);         // d10
-    ev(EV_DIAL_CCW, 400, 200);         // d8
-    ev(EV_DIAL_CCW, 400, 200);         // d6
+    ev(EV_DIAL_CW, 400, 200);          // d12
+    ev(EV_DIAL_CW, 400, 200);          // d10
+    ev(EV_DIAL_CW, 400, 200);          // d8
+    ev(EV_DIAL_CW, 400, 200);          // d6
     for (int i = 0; i < 7; i++) ev(EV_SWIPE_UP, SCR_C, 300);   // 8d6 (fireball)
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
@@ -232,11 +243,7 @@ int main(int argc, char **argv)
     shot("36_dice_history");
     ev(EV_BOOT_CLICK, 0, 0);
     ev(EV_BOOT_CLICK, 0, 0);
-    ev(EV_DIAL_CW, 400, 200);          // d8
-    ev(EV_DIAL_CW, 400, 200);          // d10
-    ev(EV_DIAL_CW, 400, 200);          // d12
-    ev(EV_DIAL_CW, 400, 200);          // d20
-    ev(EV_DIAL_CW, 400, 200);          // d100
+    for (int i = 0; i < 5; i++) ev(EV_DIAL_CCW, 400, 200);   // d6 -> d100
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("37_dice_d100");

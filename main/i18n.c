@@ -127,6 +127,16 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_DICE_SHAKE] = {"Scuoti per tirare", "Shake to roll"},
     [S_DICE_RESET] = {"Riparti da d20", "Back to d20"},
     [S_DICE_REROLL] = {"Tocca per ritirare", "Tap to roll again"},
+    [S_BATTERY_EMPTY] = {"Batteria scarica: spengo", "Battery empty: powering off"},
+    [S_BATTERY_LOW] = {"Batteria al %d%%", "Battery at %d%%"},
+    [S_HOME_LIST] = {"Lista app", "App list"},
+    [S_HOME_LOOP] = {"Continua", "Loops"},
+    [S_HOME_STOP] = {"Si ferma ai lati", "Stops at the ends"},
+    [S_SET_BATTERY] = {"Batteria", "Battery"},
+    [S_BATT_CAPACITY] = {"Capacità", "Capacity"},
+    [S_BATT_CARE] = {"Carica fino al 90%", "Charge to 90%"},
+    [S_POWER_SAVE] = {"Risparmio energetico", "Power saving"},
+    [S_WIFI_SAVE] = {"Wi-Fi solo quando serve", "Wi-Fi only when needed"},
 };
 
 const char *T(int id)

@@ -23,8 +23,12 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .pin{display:flex;gap:10px;justify-content:center;margin:10px 0 18px}
 .pin input{width:58px;height:66px;text-align:center;font:600 1.8rem system-ui;border-radius:14px;border:1px solid var(--line);background:#0f0e0c;color:var(--text)}
 .err{color:var(--warn);min-height:1.4em;text-align:center;font-size:.9rem}
-#stage{position:relative;width:min(84vw,340px);aspect-ratio:1;margin:6px auto 8px;touch-action:none;border-radius:50%;overflow:hidden;background:#000;box-shadow:0 0 0 2px var(--acc),0 0 0 9999px rgba(0,0,0,0)}
+#stage{position:relative;width:min(88vw,380px);aspect-ratio:1;margin:6px auto 8px;touch-action:none;background:#000;border-radius:12px;overflow:hidden}
 #stage canvas{width:100%;height:100%;display:block}
+/* what falls outside the round screen stays visible but dimmed, with the circle outlined */
+#stage .mask{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle closest-side,transparent 99.2%,rgba(0,0,0,.62) 100%)}
+#stage .ring{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 2px var(--acc);pointer-events:none}
+#stage .play{position:absolute;right:10px;bottom:10px;width:auto;padding:6px 12px;font-size:.8rem;border-radius:10px;background:rgba(0,0,0,.6);color:var(--text);border:1px solid var(--line)}
 .hint{color:var(--dim);font-size:.85rem;text-align:center}
 .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:10px 0 4px}.bar>div{height:100%;width:0;background:var(--acc);transition:width .15s}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px}
@@ -59,7 +63,7 @@ small{color:var(--dim)}
 
   <div class="card hidden" id="editor">
     <div class="row" style="margin-bottom:8px"><b id="edTitle" style="flex:3"></b><small id="edCount" style="text-align:right"></small></div>
-    <div id="stage"><canvas id="cv" width="466" height="466"></canvas></div>
+    <div id="stage"><canvas id="cv" width="466" height="466"></canvas><div class="mask"></div><div class="ring"></div><button class="play hidden" id="play"></button></div>
     <div class="hint" data-t="cropHint"></div>
     <label data-t="zoom"></label><input type="range" id="zoom" min="100" max="400" value="100">
     <div id="vidOpts" class="hidden">
@@ -246,6 +250,7 @@ function decodeGif(buf) {
       const y = rows[r] + y0;
       if (y >= H) continue;
       for (let x = 0; x < w; x++) {
+        if (r * w + x >= o) break;   // short/corrupt data: keep the previous picture, like browsers do
         const ci = px[r * w + x];
         if (ci == trans || x + x0 >= W || !ct) continue;
         const d = (y * W + x + x0) * 4;
@@ -258,6 +263,35 @@ function decodeGif(buf) {
     trans = -1; disposal = 0; delay = 100;
   }
   return {W, H, frames};
+}
+
+// The browser's own GIF decoder when there is one (WebCodecs ImageDecoder): frames come out
+// exactly as the phone shows the GIF. Otherwise decodeGif() above.
+async function decodeGifBest(buf) {
+  if ("ImageDecoder" in window) {
+    try {
+      const dec = new ImageDecoder({data: buf, type: "image/gif"});
+      await dec.tracks.ready;
+      const n = dec.tracks.selectedTrack.frameCount, frames = [];
+      let W = 0, H = 0, c, g;
+      for (let i = 0; i < n; i++) {
+        const {image} = await dec.decode({frameIndex: i});
+        if (!c) {
+          W = image.displayWidth; H = image.displayHeight;
+          c = document.createElement("canvas"); c.width = W; c.height = H;
+          g = c.getContext("2d", {willReadFrequently: true});
+        }
+        g.clearRect(0, 0, W, H);
+        g.drawImage(image, 0, 0);
+        const d = image.duration ? Math.round(image.duration / 1000) : 100;
+        frames.push({data: g.getImageData(0, 0, W, H), delay: d < 20 ? 100 : d});
+        image.close();
+      }
+      dec.close();
+      if (frames.length) return {W, H, frames};
+    } catch (e) { /* fall back */ }
+  }
+  return decodeGif(buf);
 }
 
 /* ---------------- editor ---------------- */
@@ -329,7 +363,7 @@ async function openFile(f) {
   try {
     if (f.type == "image/gif" || /\.gif$/i.test(f.name)) {
       kind = "gif";
-      gif = decodeGif(await f.arrayBuffer());
+      gif = await decodeGifBest(await f.arrayBuffer());
       const c = document.createElement("canvas");
       c.width = gif.W; c.height = gif.H;
       c.getContext("2d").putImageData(gif.frames[0].data, 0, 0);
@@ -357,13 +391,60 @@ async function openFile(f) {
     }
   } catch (e) { alert(t("unsupported") + "\n" + f.name); return nextFile(); }
   fit(); redraw();
+  startPreview();
 }
+// live preview: GIFs and videos play inside the crop view (paused while converting)
+let playing = false, rafId = 0, gifFrame = 0, gifNext = 0, gifCanvas = null;
+function startPreview() {
+  stopPreview();
+  if (kind == "image") { $("play").classList.add("hidden"); return; }
+  $("play").classList.remove("hidden");
+  playing = true;
+  $("play").textContent = "\u275A\u275A";
+  if (kind == "video") {
+    video.loop = false;
+    video.currentTime = +$("start").value;
+    video.play().catch(() => {});
+  }
+  if (kind == "gif") {
+    gifCanvas = gifCanvas || document.createElement("canvas");
+    gifCanvas.width = gif.W; gifCanvas.height = gif.H;
+    gifFrame = 0; gifNext = 0;
+  }
+  const loop = now => {
+    if (!playing) return;
+    if (kind == "gif") {
+      if (now >= gifNext) {
+        gifCanvas.getContext("2d").putImageData(gif.frames[gifFrame].data, 0, 0);
+        gifNext = now + gif.frames[gifFrame].delay;
+        gifFrame = (gifFrame + 1) % gif.frames.length;
+        src = gifCanvas;
+        redraw();
+      }
+    } else if (kind == "video") {
+      const t0 = +$("start").value, t1 = t0 + +$("len").value;
+      if (video.currentTime >= t1 || video.ended) { video.currentTime = t0; video.play().catch(() => {}); }
+      redraw();
+    }
+    rafId = requestAnimationFrame(loop);
+  };
+  rafId = requestAnimationFrame(loop);
+}
+function stopPreview() {
+  playing = false;
+  cancelAnimationFrame(rafId);
+  if (video) video.pause();
+  $("play").textContent = "\u25B6";
+}
+$("play").onclick = e => { e.stopPropagation(); playing ? stopPreview() : startPreview(); };
+$("play").addEventListener("pointerdown", e => e.stopPropagation());
+
 function seek(tm) { return new Promise(r => { if (Math.abs(video.currentTime - tm) < 0.001) return r(); video.onseeked = () => r(); video.currentTime = tm; }); }
 function updVid() {
   $("startV").textContent = (+$("start").value).toFixed(1) + " s";
   $("lenV").textContent = $("len").value + " s";
 }
-$("start").oninput = async () => { updVid(); await seek(+$("start").value); redraw(); };
+$("start").oninput = async () => { updVid(); if (playing) { video.currentTime = +$("start").value; return; } await seek(+$("start").value); redraw(); };
 $("len").oninput = updVid;
 
 function toJpeg(c, q) { return new Promise(r => c.toBlob(b => r(b), "image/jpeg", q)); }
@@ -382,6 +463,7 @@ function buildAmj(jpegs, delays) {
 }
 
 async function send() {
+  stopPreview();
   $("send").disabled = $("skip").disabled = true;
   const name = safeName($("name").value || "media");
   const out = document.createElement("canvas"); out.width = out.height = S;
@@ -433,6 +515,7 @@ async function send() {
   }
 }
 function nextFile() {
+  stopPreview();
   fileIdx++;
   if (fileIdx < files.length) openFile(files[fileIdx]);
   else { $("editor").classList.add("hidden"); files = []; $("file").value = ""; }

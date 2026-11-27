@@ -129,6 +129,16 @@ typedef enum {
     S_DICE_SHAKE,
     S_DICE_RESET,
     S_DICE_REROLL,
+    S_BATTERY_EMPTY,
+    S_BATTERY_LOW,
+    S_HOME_LIST,
+    S_HOME_LOOP,
+    S_HOME_STOP,
+    S_SET_BATTERY,
+    S_BATT_CAPACITY,
+    S_BATT_CARE,
+    S_POWER_SAVE,
+    S_WIFI_SAVE,
     S_COUNT
 } str_t;
 

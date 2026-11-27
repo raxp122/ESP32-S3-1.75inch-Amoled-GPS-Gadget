@@ -4,6 +4,7 @@
 // the changed areas are sent, aligned to even coordinates as the controller requires.
 #include "display.h"
 #include "board.h"
+#include "power.h"
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -178,7 +179,9 @@ static void rounder_cb(lv_event_t *e)
     if (a->y2 > H - 1) a->y2 = H - 1;
 }
 
-static void tick_cb(void *arg) { lv_tick_inc(2); }
+// LVGL time straight from the system timer: a periodic 2 ms tick interrupt would wake the
+// chip from light sleep 500 times a second
+static uint32_t tick_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
 
 void display_init(int rotation)
 {
@@ -232,10 +235,7 @@ void display_init(int rotation)
     lv_display_add_event_cb(disp, rounder_cb, LV_EVENT_INVALIDATE_AREA, NULL);
     lv_display_set_buffers(disp, lv_fb, NULL, W * H * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
 
-    const esp_timer_create_args_t ta = {.callback = tick_cb, .name = "lv_tick"};
-    esp_timer_handle_t th;
-    esp_timer_create(&ta, &th);
-    esp_timer_start_periodic(th, 2000);
+    lv_tick_set_cb(tick_ms);
 }
 
 int display_rotation(void) { return rot; }
@@ -264,18 +264,30 @@ void display_set_brightness(int pct)
 {
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
+    bool to_sleep = false;
     display_lock();
     if (dark && pct > 0) {
+        // panel out of sleep (it needs ~120 ms), then the current frame, then the light
+        xSemaphoreTakeRecursive(panel_mux, portMAX_DELAY);
+        cmd(0x11, NULL, 0);
+        vTaskDelay(pdMS_TO_TICKS(120));
+        cmd(0x29, NULL, 0);
+        xSemaphoreGiveRecursive(panel_mux);
         dark = false;
-        if (task_on && !direct) lvgl_refresh(true);   // draw the current frame before lighting up
+        if (task_on && !direct) lvgl_refresh(true);
     } else if (!dark && pct == 0) {
         dark = true;
+        to_sleep = true;
         if (task_on && !direct) lvgl_refresh(false);
     }
     display_unlock();
     uint8_t v = (uint8_t)(pct * 255 / 100);
     xSemaphoreTakeRecursive(panel_mux, portMAX_DELAY);
     cmd(0x51, &v, 1);
+    if (to_sleep) {   // screen off: display off + sleep in, the panel draws almost nothing
+        cmd(0x28, NULL, 0);
+        cmd(0x10, NULL, 0);
+    }
     xSemaphoreGiveRecursive(panel_mux);
 }
 
@@ -316,10 +328,12 @@ static void lvgl_task(void *arg)
 {
     for (;;) {
         display_lock();
+        power_boost_begin();   // full speed only while LVGL works
         uint32_t wait = lv_timer_handler();
+        power_boost_end();
         display_unlock();
         if (wait < 5) wait = 5;
-        if (wait > 30) wait = 30;
+        if (wait > (dark ? 200u : 30u)) wait = dark ? 200 : 30;
         vTaskDelay(pdMS_TO_TICKS(wait));
     }
 }

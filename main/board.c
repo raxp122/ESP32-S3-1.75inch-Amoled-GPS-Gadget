@@ -168,6 +168,21 @@ bool board_touch_recover(void)
     return true;
 }
 
+void board_battery_setup(int mah, bool care)
+{
+    // constant charge current at about 0.5 C: 0x62 bits 4:0, 100-200 mA in 25 mA steps
+    // (codes 4-8), then 300, 400, 500... mA (codes 9, 10, 11...)
+    int ma = mah / 2;
+    uint8_t code = ma >= 500 ? 11 : ma >= 400 ? 10 : ma >= 300 ? 9 : ma >= 200 ? 8 : ma >= 175 ? 7 : ma >= 150 ? 6 : ma >= 125 ? 5 : 4;
+    reg_write(dev_axp, 0x62, (axp_get(0x62) & 0xE0) | code);
+    // charge voltage: 0x64 bits 2:0, 2 = 4.1 V, 3 = 4.2 V
+    reg_write(dev_axp, 0x64, (axp_get(0x64) & 0xF8) | (care ? 2 : 3));
+    // VSYS power-off threshold: 0x24 bits 2:0, 2.6 V + n x 100 mV -> 3.2 V
+    reg_write(dev_axp, 0x24, (axp_get(0x24) & 0xF8) | 6);
+    ESP_LOGI(TAG, "battery %d mAh: charge %d mA%s", mah, code <= 8 ? 100 + (code - 4) * 25 : 300 + (code - 9) * 100,
+             care ? ", up to 4.1 V" : "");
+}
+
 void board_power_off(void) { reg_write(dev_axp, 0x10, axp_get(0x10) | 0x01); }
 
 bool board_charging(void) { return ((axp_get(0x01) >> 5) & 0x03) == 0x01; }

@@ -35,7 +35,8 @@ static SemaphoreHandle_t mtx;
 static esp_timer_handle_t reconnect_timer;
 static bool sntp_started;
 
-static bool want_sta(void) { return g_set.wifi_on && g_set.wifi_ssid[0]; }
+static volatile bool suspended;
+static bool want_sta(void) { return g_set.wifi_on && g_set.wifi_ssid[0] && !suspended; }
 static void update_mode(void);
 
 static void sta_connect(void)
@@ -187,7 +188,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 
 static void update_mode(void)
 {
-    bool need = g_set.wifi_on || ap_on || scan_users > 0;
+    bool need = (g_set.wifi_on && !suspended) || ap_on || scan_users > 0;
     if (!need) {
         if (started) { esp_wifi_stop(); started = false; cur_mode = WIFI_MODE_NULL; }
         state = WIFI_OFF;
@@ -254,12 +255,23 @@ void wifi_mgr_apply(void)
     update_mode();
 }
 
+void wifi_mgr_set_suspend(bool s)
+{
+    if (s == suspended) return;
+    suspended = s;
+    if (!mtx) return;   // not started yet: wifi_mgr_init() applies it
+    ESP_LOGI(TAG, "radio %s", s ? "paused (battery saving)" : "back on");
+    if (!s) { retry_ms = 1000; conn_fail = false; conn_try = 0; }
+    update_mode();
+}
+
 bool wifi_mgr_connect(const char *ssid, const char *pass)
 {
     if (!ssid || !ssid[0] || strlen(ssid) > 32 || strlen(pass) > 64) return false;
     strlcpy(g_set.wifi_ssid, ssid, sizeof(g_set.wifi_ssid));
     strlcpy(g_set.wifi_pass, pass, sizeof(g_set.wifi_pass));
     g_set.wifi_on = 1;
+    suspended = false;
     settings_save();
     if (scanning) { esp_wifi_scan_stop(); scanning = false; }
     if (started) own_disconnect();

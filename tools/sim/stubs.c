@@ -38,6 +38,7 @@ void board_power_off(void) {}
 bool board_imu_ok(void) { return true; }
 bool board_imu_accel(vec3_t *g) { g->x = 0; g->y = 0; g->z = 1; return true; }
 void board_gps_enable(bool on) {}
+void board_battery_setup(int mah, bool care) {}
 
 /* ---- display ---- */
 static int rot;
@@ -57,6 +58,7 @@ void input_init(ev_handler_t h) { sim_handler = h; }
 void input_set_touch(bool on) {}
 bool input_touch_enabled(void) { return true; }
 void input_set_double_tap(bool w) {}
+void input_set_poll_ms(int ms) {}
 uint32_t input_idle_ms(void) { return 0; }
 void input_mark_activity(void) {}
 int input_boot_held_ms(void) { return sim_boot_held; }
@@ -76,6 +78,7 @@ bool wifi_mgr_conn_failed(void) { return false; }
 const char *wifi_mgr_ip(void) { return sim_wifi == WIFI_CONNECTED ? "192.168.1.42" : ""; }
 int wifi_mgr_rssi(void) { return -58; }
 void wifi_mgr_apply(void) {}
+void wifi_mgr_set_suspend(bool s) {}
 bool wifi_mgr_connect(const char *s, const char *p) { return true; }
 void wifi_mgr_forget(void) {}
 void wifi_mgr_reconnect(void) {}

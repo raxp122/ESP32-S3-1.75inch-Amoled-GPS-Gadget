@@ -8,55 +8,83 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "esp_heap_caps.h"
 
-#define BIG    256
-#define SMALL  110
+#define BIG    THUMB_SIZE        // 240: the preview at 1:1
+#define SMALL  (THUMB_SIZE / 2)  // 120: the neighbours, shrunk once in memory
 
 static int sel;
 static uint32_t seen_gen = UINT32_MAX;
 static lv_obj_t *ring, *img, *side[2], *side_img[2], *name_l, *idx_l, *kind_l, *empty_l;
-static uint16_t *buf[3];          // thumbnails of sel-1, sel, sel+1
+// slot 1: the current media (BIG), slots 0 / 2: the neighbours (SMALL). Already round and at
+// their final size: LVGL only copies them (no scaling, no clip_corner layers: both tear on
+// this panel and cost CPU).
+static uint16_t *buf[3], *tmp;
 static int buf_idx[3] = {-1, -1, -1};
 static lv_image_dsc_t dsc[3];
 
+static int slot_size(int k) { return k == 1 ? BIG : SMALL; }
+
 static void dsc_init(int k)
 {
+    int sz = slot_size(k);
     dsc[k] = (lv_image_dsc_t){
-        .header = {.magic = LV_IMAGE_HEADER_MAGIC, .cf = LV_COLOR_FORMAT_RGB565, .w = THUMB_SIZE, .h = THUMB_SIZE,
-                   .stride = THUMB_SIZE * 2},
-        .data_size = THUMB_SIZE * THUMB_SIZE * 2,
+        .header = {.magic = LV_IMAGE_HEADER_MAGIC, .cf = LV_COLOR_FORMAT_RGB565, .w = sz, .h = sz, .stride = sz * 2},
+        .data_size = sz * sz * 2,
         .data = (const uint8_t *)buf[k],
     };
 }
 
-// thumbnail of media i in slot k (decoded once, kept while it stays a neighbour)
+// black outside the circle: the screen background is black, so the preview looks round
+static void round_mask(uint16_t *b, int sz)
+{
+    float r = sz / 2.0f;
+    for (int y = 0; y < sz; y++) {
+        float dy = y + 0.5f - r;
+        int half = (int)(sqrtf(r * r - dy * dy) + 0.5f);
+        int x0 = sz / 2 - half, x1 = sz / 2 + half;
+        for (int x = 0; x < x0 && x < sz; x++) b[y * sz + x] = 0;
+        for (int x = x1 < 0 ? 0 : x1; x < sz; x++) b[y * sz + x] = 0;
+    }
+}
+
+// 2x2 average (RGB565)
+static void halve(const uint16_t *s, uint16_t *d, int sz)
+{
+    for (int y = 0; y < sz / 2; y++)
+        for (int x = 0; x < sz / 2; x++) {
+            int r = 0, g = 0, b = 0;
+            for (int k = 0; k < 4; k++) {
+                uint16_t p = s[(2 * y + (k >> 1)) * sz + 2 * x + (k & 1)];
+                r += p >> 11; g += (p >> 5) & 63; b += p & 31;
+            }
+            d[y * (sz / 2) + x] = (uint16_t)((r / 4) << 11 | (g / 4) << 5 | (b / 4));
+        }
+}
+
+// preview of media i in slot k (kept while it stays in the same slot)
 static bool load(int k, int i)
 {
     if (buf_idx[k] == i) return true;
-    if (!buf[k]) { buf[k] = media_frame_alloc(THUMB_SIZE, THUMB_SIZE); if (!buf[k]) return false; dsc_init(k); }
-    // maybe another slot already has it
-    for (int j = 0; j < 3; j++)
-        if (j != k && buf_idx[j] == i && buf[j]) {
-            memcpy(buf[k], buf[j], THUMB_SIZE * THUMB_SIZE * 2);
-            buf_idx[k] = i;
-            return true;
-        }
+    int sz = slot_size(k);
+    if (!buf[k]) { buf[k] = media_frame_alloc(sz, sz); if (!buf[k]) return false; dsc_init(k); }
+    if (!tmp) { tmp = media_frame_alloc(THUMB_SIZE, THUMB_SIZE); if (!tmp) return false; }
     buf_idx[k] = -1;
-    if (!media_thumb(i, buf[k])) { memset(buf[k], 0, THUMB_SIZE * THUMB_SIZE * 2); return false; }
+    bool ok = media_thumb(i, k == 1 ? buf[k] : tmp);
+    if (!ok) { memset(buf[k], 0, sz * sz * 2); return false; }
+    if (k != 1) halve(tmp, buf[k], THUMB_SIZE);
+    round_mask(buf[k], sz);
     buf_idx[k] = i;
     return true;
 }
 
 static lv_obj_t *round_img(lv_obj_t *parent, int d, lv_obj_t **img_out)
 {
-    lv_obj_t *c = ui_circle(parent, d, C_CARD);
-    lv_obj_set_style_clip_corner(c, true, 0);
-    lv_obj_t *im = lv_image_create(c);
-    lv_obj_center(im);
-    lv_image_set_scale(im, 256 * d / THUMB_SIZE);
+    lv_obj_t *im = lv_image_create(parent);
+    lv_obj_set_size(im, d, d);
     *img_out = im;
-    return c;
+    return im;
 }
 
 static void show(void)
@@ -64,6 +92,7 @@ static void show(void)
     int n = media_count();
     bool none = n == 0;
     lv_obj_update_flag(ring, LV_OBJ_FLAG_HIDDEN, none);
+    lv_obj_update_flag(img, LV_OBJ_FLAG_HIDDEN, none);
     lv_obj_update_flag(name_l, LV_OBJ_FLAG_HIDDEN, none);
     lv_obj_update_flag(idx_l, LV_OBJ_FLAG_HIDDEN, none);
     lv_obj_update_flag(empty_l, LV_OBJ_FLAG_HIDDEN, !none);
@@ -102,13 +131,19 @@ static void enter(lv_obj_t *root, void *arg)
     }
     for (int s = 0; s < 2; s++) {
         side[s] = round_img(root, SMALL, &side_img[s]);
-        lv_obj_set_style_opa(side[s], LV_OPA_50, 0);
+        lv_obj_set_style_image_opa(side[s], LV_OPA_50, 0);   // image opacity: no extra layer
         lv_obj_align(side[s], LV_ALIGN_CENTER, s ? 186 : -186, -6);
     }
-    ring = round_img(root, BIG, &img);
+    round_img(root, BIG, &img);
+    lv_obj_align(img, LV_ALIGN_CENTER, 0, -6);
+    // the accent ring around the preview: a separate outline, no clipping needed
+    ring = lv_obj_create(root);
+    lv_obj_remove_style_all(ring);
+    lv_obj_set_size(ring, BIG + 12, BIG + 12);
+    lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_color(ring, ui_accent(), 0);
     lv_obj_set_style_border_width(ring, 3, 0);
-    lv_obj_set_style_border_post(ring, true, 0);
+    lv_obj_remove_flag(ring, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
     lv_obj_align(ring, LV_ALIGN_CENTER, 0, -6);
     idx_l = ui_label(root, &font_s, C_DIM, "");
     lv_obj_align(idx_l, LV_ALIGN_TOP_MID, 0, 52);

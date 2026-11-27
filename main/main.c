@@ -9,6 +9,7 @@
 #include "display.h"
 #include "media.h"
 #include "ota.h"
+#include "power.h"
 #include "sd.h"
 #include "settings.h"
 #include "ui.h"
@@ -34,6 +35,7 @@ void app_main(void)
     settings_load();
     time_from_rtc();
     board_gps_enable(g_set.gps_on);
+    power_init();         // charger for the battery in use, frequency scaling, light sleep
     sd_mount();
     media_scan();
 

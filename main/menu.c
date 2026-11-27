@@ -5,13 +5,21 @@
 #include <string.h>
 
 static menu_t *m;
-static lv_obj_t *title, *group, *icon, *label, *value, *prev, *next, *track, *thumb;
+static lv_obj_t *title, *group, *prev, *next, *track, *thumb;
 static bool editing;
 static int confirm_sel = -1;
 static uint32_t confirm_until;
 
 static void anim_ty(void *o, int32_t v) { lv_obj_set_style_translate_y(o, v, 0); }
-static void anim_opa(void *o, int32_t v) { lv_obj_set_style_opa(o, (lv_opa_t)v, 0); }
+static lv_obj_t *icon, *label, *value;
+// fade of the middle item through the text opacity of its labels: a whole-object opacity
+// would make LVGL draw the group in a separate layer (slow, and it tears on this panel)
+static void anim_opa(void *o, int32_t v)
+{
+    lv_obj_set_style_text_opa(icon, (lv_opa_t)v, 0);
+    lv_obj_set_style_text_opa(label, (lv_opa_t)v, 0);
+    lv_obj_set_style_text_opa(value, (lv_opa_t)v, 0);
+}
 
 static const char *item_text(const menu_item_t *it) { return it->str >= 0 ? T(it->str) : (it->text ? it->text : ""); }
 
@@ -49,7 +57,7 @@ static void refresh(int dir)
     }
     if (dir) {
         lv_obj_set_style_translate_y(group, dir * 26, 0);
-        lv_obj_set_style_opa(group, LV_OPA_40, 0);
+        anim_opa(NULL, LV_OPA_40);
         lv_anim_t a;
         lv_anim_init(&a);
         lv_anim_set_var(&a, group);
@@ -99,8 +107,8 @@ static void enter(lv_obj_t *root, void *arg)
     lv_obj_align(next, LV_ALIGN_CENTER, 0, 128);
     lv_obj_set_style_text_color(prev, C_DIM, 0);
     lv_obj_set_style_text_color(next, C_DIM, 0);
-    lv_obj_set_style_opa(prev, LV_OPA_60, 0);
-    lv_obj_set_style_opa(next, LV_OPA_60, 0);
+    lv_obj_set_style_text_opa(prev, LV_OPA_60, 0);
+    lv_obj_set_style_text_opa(next, LV_OPA_60, 0);
 
     group = lv_obj_create(root);
     lv_obj_remove_style_all(group);

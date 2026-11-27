@@ -10,6 +10,7 @@
 #include "settings.h"
 #include "ui.h"
 #include "wifi_mgr.h"
+#include "power.h"
 #include <stdio.h>
 #include <string.h>
 #include "esp_app_desc.h"
@@ -177,7 +178,9 @@ static void do_auto(void)
     if (wifi_mgr_state() != WIFI_CONNECTED) return;
     auto_done = true;
     if (state != OTA_IDLE || __atomic_exchange_n(&busy, true, __ATOMIC_ACQ_REL)) return;
+    power_hold(true);
     do_check();
+    power_hold(false);
     __atomic_store_n(&busy, false, __ATOMIC_RELEASE);
     if (state == OTA_AVAILABLE) {
         char t[96];
@@ -193,10 +196,11 @@ typedef enum { JOB_CHECK, JOB_INSTALL, JOB_AUTO } job_t;
 static void task(void *arg)
 {
     job_t j = (job_t)(intptr_t)arg;
+    if (j != JOB_AUTO) power_hold(true);
     if (j == JOB_CHECK) do_check();
     else if (j == JOB_INSTALL) do_install();
     else do_auto();
-    if (j != JOB_AUTO) __atomic_store_n(&busy, false, __ATOMIC_RELEASE);
+    if (j != JOB_AUTO) { __atomic_store_n(&busy, false, __ATOMIC_RELEASE); power_hold(false); }
     vTaskDelete(NULL);
 }
 
