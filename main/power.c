@@ -50,8 +50,8 @@ void power_init(void)
     }
 #endif
     usb = board_usb_power();
-    bat_pct = board_battery_percent();
     bat_chg = board_charging();
+    bat_pct = battery_percent_pick(board_battery_percent(), board_battery_volts(), bat_chg);
     power_apply();
 }
 
@@ -82,9 +82,9 @@ void power_hold(bool on)
 static void battery_check(void)
 {
     if (board_charging() || usb) { warned = 0; return; }
-    int p = board_battery_percent();
-    if (p < 0) return;   // no battery (USB only)
     float v = board_battery_volts();
+    if (v <= 0) return;   // no battery (USB only)
+    int p = battery_percent_pick(board_battery_percent(), v, false);
     // almost empty: switch off while the cell still has its reserve (a LiPo should not be
     // drained below ~3.4-3.5 V at rest); the voltage check filters out a confused gauge
     if (p <= 3 && v > 0 && v < 3.55f) {
@@ -121,7 +121,10 @@ void power_tick(void)
         bool u = board_usb_power();
         if (u != usb) { usb = u; power_apply(); }
     }
-    if (n % 25 == 0) { bat_pct = board_battery_percent(); bat_chg = board_charging(); }   // every 5 s
+    if (n % 25 == 0) {   // every 5 s; a gauge that has not learned the battery yet is corrected
+        bat_chg = board_charging();
+        bat_pct = battery_percent_pick(board_battery_percent(), board_battery_volts(), bat_chg);
+    }
     if (n % 50 == 1) battery_check();   // every 10 s
 }
 

@@ -45,6 +45,11 @@ int  version_compare(const char *a, const char *b);
 bool night_active(int hour, int from_h, int to_h);
 // URL query parameter (decoded): false if missing
 bool query_param(const char *query, const char *key, char *out, size_t n);
+// LiPo charge (0-100) estimated from the voltage at rest; 0 for 0 V (no battery)
+int  battery_percent_from_volts(float v);
+// The percentage to show: the PMU fuel gauge, unless it is missing (-1) or far from the voltage
+// estimate (a new battery the gauge has not learned yet, e.g. 0 % at 4.09 V): then the estimate.
+int  battery_percent_pick(int gauge, float volts, bool charging);
 // next index of a shuffled slideshow (never the current one when count > 1)
 int  shuffle_next(int cur, int count, uint32_t *seed);
 

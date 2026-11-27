@@ -5,6 +5,9 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Battery: when the PMU fuel gauge is far from the voltage (a new battery it has not learned
+  yet showed 0 % at 4.09 V) the percentage comes from the voltage; warnings and the
+  low-battery power off use the corrected value.
 - Home: a fixed shortcut at 6 o'clock between the two horizon strokes, any app of the ring
   (Settings by default, Settings › Screen › Shortcut at the bottom). The ring now fades out a
   little earlier to leave it room.
