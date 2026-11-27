@@ -7,7 +7,8 @@ number of the published release (`0.1.<build>`).
 
 - Calendar: the rings now turn with the bezel (later days, months and years sit
   counter-clockwise, so turning clockwise brings them to the window); before they ran the
-  other way.
+  other way. Swipe down now moves the active ring inwards (days → months → years), as the
+  window reads from top to bottom; swipe up goes back out.
 
 - Settings › Pendant › Plays: *Single media* (BOOT for the next one) or *Slideshow* (every media
   in turn, after the interval; an animation always plays to the end of a loop first). Before,

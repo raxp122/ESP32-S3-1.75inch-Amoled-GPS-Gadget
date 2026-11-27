@@ -2,8 +2,8 @@
 // years inside. The chosen values sit in a window at 12 o'clock; the date is in the middle.
 //
 // Bezel: turns the active ring (passing the end of a month turns the months ring too, the end
-// of a year the years ring). Swipe: the active ring, days -> months -> years -> days (left / up
-// forward, right / down back). Tap on a ring: that ring becomes active. Tap in the middle: the
+// of a year the years ring). Swipe: the active ring, days -> months -> years -> days (down /
+// left inwards, up / right outwards). Tap on a ring: that ring becomes active. Tap in the middle: the
 // day page. Long press: back to today. BOOT leaves.
 //
 // The day page: weekday, date, working day or national holiday (no names), how far from today,
@@ -259,8 +259,9 @@ static bool event(ev_t e, int x, int y)
     switch (e) {
     case EV_DIAL_CW: go(1); return true;
     case EV_DIAL_CCW: go(-1); return true;
-    case EV_SWIPE_LEFT: case EV_SWIPE_UP: set_mode(mode + 1); return true;
-    case EV_SWIPE_RIGHT: case EV_SWIPE_DOWN: set_mode(mode - 1); return true;
+    // in the window the days are at the top and the years at the bottom: down goes inwards
+    case EV_SWIPE_LEFT: case EV_SWIPE_DOWN: set_mode(mode + 1); return true;
+    case EV_SWIPE_RIGHT: case EV_SWIPE_UP: set_mode(mode - 1); return true;
     case EV_LONG_PRESS:
         if (same_date(cur, today)) return true;
         cur = today;
