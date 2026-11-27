@@ -82,7 +82,7 @@ void settings_load(void)
     if (g_set.disp_int_all_s < 3) g_set.disp_int_all_s = 10;
     if (g_set.disp_int_img_s < 3) g_set.disp_int_img_s = 60;
     if (g_set.disp_int_anim_s < 3) g_set.disp_int_anim_s = 20;
-    if (g_set.battery_off_pct > 30) g_set.battery_off_pct = 3;
+    if (g_set.battery_off_pct > 50) g_set.battery_off_pct = 3;
     g_set.dice = dice_clamp(g_set.dice);
     if (g_set.battery_mah < 100 || g_set.battery_mah > 5000) g_set.battery_mah = 500;
 }

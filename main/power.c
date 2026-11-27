@@ -34,6 +34,30 @@ static int bat_pct = -1;
 static bool bat_chg, bat_est, bat_present;
 static int new_battery_in;   // ticks until the fuel gauge reset (0 = none pending)
 
+static int64_t off_at_us;   // battery power off due at this time (0 = none)
+
+#define OFF_WARN_S 30
+
+int power_shutdown_in_s(void)
+{
+    if (!off_at_us) return -1;
+    int64_t d = off_at_us - esp_timer_get_time();
+    return d > 0 ? (int)((d + 999999) / 1000000) : 0;
+}
+
+void power_shutdown_extend(int s)
+{
+    int64_t t = esp_timer_get_time() + (int64_t)s * 1000000;
+    if (off_at_us && off_at_us < t) off_at_us = t;
+}
+
+// below the threshold of the settings and not charging?
+static bool below_threshold(int p)
+{
+    int lim = g_set.battery_off_pct;
+    return lim && p >= 0 && p <= lim && !usb && !bat_chg;
+}
+
 int power_battery_percent(void) { return bat_pct; }
 bool power_charging(void) { return bat_chg; }
 bool power_battery_estimated(void) { return bat_pct >= 0 && bat_est; }
@@ -96,17 +120,15 @@ static void battery_check(void)
     if (v <= 0) return;   // no battery (USB only)
     bool e = bat_est;
     int p = battery_percent_pick(board_battery_percent(), v, false, &e);
-    // almost empty: switch off while the cell still has its reserve. Only when the percentage
-    // and the voltage both say so (a gauge that has not learned the battery reads 0 % on a half
-    // full cell), three checks in a row (30 s: a dip under load is not enough) and not in the
-    // first half minute after power on.
-    int lim = g_set.battery_off_pct;
-    bool low = lim && p <= lim && battery_percent_from_volts(v) <= lim + 5;
-    low_count = low ? low_count + 1 : 0;
-    if (low_count >= 3 && esp_timer_get_time() > 30LL * 1000 * 1000) {
-        ESP_LOGW(TAG, "battery empty (%d%%, %.2f V): power off", p, v);
-        ui_toast(T(S_BATTERY_EMPTY));
-        ui_power_off();
+    // below the threshold of the settings, two checks in a row (a dip under load is not enough):
+    // a screen says the pendant switches off in 30 s (plug in the charger or change the
+    // threshold to stay on)
+    low_count = below_threshold(p) ? low_count + 1 : 0;
+    if (low_count >= 2 && !off_at_us) {
+        ESP_LOGW(TAG, "battery %d%% (%.2f V), under the threshold: power off in %d s", p, v, OFF_WARN_S);
+        off_at_us = esp_timer_get_time() + OFF_WARN_S * 1000000LL;
+        ui_wake();
+        ui_push(&scr_battery_off, NULL);
         return;
     }
     int level = p <= 7 ? 7 : p <= 15 ? 15 : 0;
@@ -149,6 +171,18 @@ void power_tick(void)
     }
     // every 5 s; a gauge that has not learned the battery yet is corrected
     if (n % 25 == 0) battery_read();
+    // the battery power off: called off by the charger or a lower threshold, else done
+    if (off_at_us) {
+        if (!below_threshold(bat_pct)) {
+            off_at_us = 0;
+            low_count = 0;
+        } else if (esp_timer_get_time() >= off_at_us) {
+            off_at_us = 0;
+            ESP_LOGW(TAG, "battery under the threshold: power off");
+            ui_power_off();
+            return;
+        }
+    }
     if (n % 50 == 1) battery_check();   // every 10 s
 }
 
