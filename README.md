@@ -129,6 +129,27 @@ any app, Settings by default (Settings › Screen › Shortcut at the bottom).
   case, accent colour, auto off), pendant, night, updates, language (Italian / English), time
   zone, system.
 - **Info**: battery, power, microSD, network, firmware, memory.
+- **Calendar**: three concentric rings, see below.
+
+## Calendar
+
+<p>
+<img src="docs/img/calendar.png" width="180" alt="Calendar">
+<img src="docs/img/calendar_day.png" width="180" alt="Calendar, the day page">
+</p>
+
+Days on the outer ring, months in the middle, years inside; the chosen values line up in the
+window at 12 o'clock and the date is in the middle. Offline, no account.
+
+- **Bezel**: turns the active ring. Past the end of a month the months ring turns too, past the
+  end of a year the years ring.
+- **Swipe**: the active ring, days → months → years → days (the dots under the date show it).
+  A tap on a ring makes it active.
+- **Tap in the middle**: the day page (working day or holiday, days from today, the next holiday,
+  ISO week, day of the year); the bezel moves it by one day, a tap goes back.
+- **Long press**: back to today. **BOOT** leaves.
+- Holidays are the Italian national non-working days (including Easter Monday and, from 2026,
+  4 October), shown in the accent colour without names; Sundays are tinted.
 
 ## Dice
 

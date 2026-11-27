@@ -55,6 +55,26 @@ int  battery_percent_pick(int gauge, float volts, bool charging, bool *estimated
 // next index of a shuffled slideshow (never the current one when count > 1)
 int  shuffle_next(int cur, int count, uint32_t *seed);
 
+/* ---- calendar ----
+ * Gregorian dates, years 1900-2199. Weekday 0 = Monday ... 6 = Sunday. */
+typedef struct { int16_t y; uint8_t m, d; } date_t;   // m 1-12, d 1-31
+
+bool    date_leap(int y);
+int     date_days_in_month(int y, int m);
+int     date_weekday(date_t d);
+int     date_yday(date_t d);                  // 1 = 1 January
+int     date_iso_week(date_t d);              // 1-53
+int32_t date_to_days(date_t d);               // days since 1970-01-01
+date_t  date_from_days(int32_t days);
+date_t  date_add_days(date_t d, int n);
+date_t  date_add_months(date_t d, int n);     // the day is clamped (31 Jan + 1 = 28/29 Feb)
+date_t  date_add_years(date_t d, int n);      // 29 Feb -> 28 Feb
+date_t  date_clamp(date_t d);                 // into the supported range, valid day
+date_t  date_easter(int y);
+// Italian national non-working day (Sundays are not counted here)
+bool    date_holiday_it(date_t d);
+date_t  date_next_holiday_it(date_t d);       // the first one after d
+
 /* ---- dice ----
  * A roll: count dice with `sides` faces, plus a modifier. Advantage / disadvantage roll every
  * die twice and keep the higher / lower one (for 1d20 it is the D&D rule). drop_lowest drops

@@ -2,6 +2,16 @@
 
 What AmuletOS may get next. Nothing here is promised; the order is decided one app at a time.
 
+## Done
+
+- **Calendar** (offline, no account for now): weekday, ISO week, day of the year, days until a
+  date, and whether a day is a national non-working day (marked only as "holiday", no names of
+  saints or religious notes). Three concentric rings: days outside, months in the middle,
+  years inside, the selected values in a window at 12 o'clock. The bezel turns the active ring;
+  when the days pass the end of a month the months ring clicks on too (and the years ring at
+  the end of the year). A swipe changes the active ring: days, months, years, days again. The
+  date is in the middle; a tap opens the day page. Mockups in `docs/mockups/calendar_4*.png`.
+
 ## Decided
 
 - **Tarot**: major and minor arcana, round cards (find a round deck or draw one for the
@@ -18,14 +28,6 @@ What AmuletOS may get next. Nothing here is promised; the order is decided one a
 - **Magic: The Gathering life counter**: 2 players, Commander with 4 players (commander damage,
   poison), the circle split in sectors.
 - **Bubble level**: like the other gadget, a tap calibrates; flat side only (one face).
-
-- **Calendar** (offline, no account for now): weekday, ISO week, day of the year, days until a
-  date, and whether a day is a national non-working day (marked only as "holiday", no names of
-  saints or religious notes). Three concentric rings: days outside, months in the middle,
-  years inside, the selected values in a window at 12 o'clock. The bezel turns the active ring;
-  when the days pass the end of a month the months ring clicks on too (and the years ring at
-  the end of the year). A swipe changes the active ring: days, months, years, days again. The
-  date is in the middle; a tap opens the day page. Mockups in `docs/mockups/calendar_4*.png`.
 
 ## Later (needs the GPS)
 

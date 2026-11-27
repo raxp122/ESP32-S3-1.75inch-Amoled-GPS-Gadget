@@ -283,3 +283,116 @@ int dice_ability_mod(int score)
     int d = score - 10;
     return d >= 0 ? d / 2 : -((-d + 1) / 2);
 }
+
+/* ---------------- calendar ---------------- */
+
+#define Y_MIN 1900
+#define Y_MAX 2199
+
+bool date_leap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
+
+int date_days_in_month(int y, int m)
+{
+    static const uint8_t n[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (m < 1 || m > 12) return 30;
+    return m == 2 && date_leap(y) ? 29 : n[m - 1];
+}
+
+date_t date_clamp(date_t d)
+{
+    if (d.y < Y_MIN) d = (date_t){Y_MIN, 1, 1};
+    if (d.y > Y_MAX) d = (date_t){Y_MAX, 12, 31};
+    if (d.m < 1) d.m = 1;
+    if (d.m > 12) d.m = 12;
+    if (d.d < 1) d.d = 1;
+    int n = date_days_in_month(d.y, d.m);
+    if (d.d > n) d.d = (uint8_t)n;
+    return d;
+}
+
+// days from civil (H. Hinnant's algorithm)
+int32_t date_to_days(date_t d)
+{
+    int y = d.y - (d.m <= 2);
+    int era = (y >= 0 ? y : y - 399) / 400;
+    int yoe = y - era * 400;
+    int doy = (153 * (d.m + (d.m > 2 ? -3 : 9)) + 2) / 5 + d.d - 1;
+    int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + doe - 719468;
+}
+
+date_t date_from_days(int32_t z)
+{
+    z += 719468;
+    int era = (z >= 0 ? z : z - 146096) / 146097;
+    int doe = z - era * 146097;
+    int yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    int y = yoe + era * 400;
+    int doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    int mp = (5 * doy + 2) / 153;
+    int d = doy - (153 * mp + 2) / 5 + 1;
+    int m = mp < 10 ? mp + 3 : mp - 9;
+    return (date_t){(int16_t)(y + (m <= 2)), (uint8_t)m, (uint8_t)d};
+}
+
+int date_weekday(date_t d)
+{
+    int32_t w = (date_to_days(d) + 3) % 7;   // 1970-01-01 was a Thursday
+    return w < 0 ? w + 7 : w;
+}
+
+int date_yday(date_t d) { return date_to_days(d) - date_to_days((date_t){d.y, 1, 1}) + 1; }
+
+int date_iso_week(date_t d)
+{
+    // the week belongs to the year of its Thursday
+    date_t th = date_from_days(date_to_days(d) - date_weekday(d) + 3);
+    return (date_yday(th) - 1) / 7 + 1;
+}
+
+date_t date_add_days(date_t d, int n) { return date_clamp(date_from_days(date_to_days(d) + n)); }
+
+date_t date_add_months(date_t d, int n)
+{
+    int m = d.y * 12 + (d.m - 1) + n;
+    d.y = (int16_t)(m / 12);
+    d.m = (uint8_t)(m % 12 + 1);
+    return date_clamp(d);
+}
+
+date_t date_add_years(date_t d, int n)
+{
+    d.y = (int16_t)(d.y + n);
+    return date_clamp(d);
+}
+
+date_t date_easter(int y)
+{
+    // anonymous Gregorian algorithm (Meeus/Jones/Butcher)
+    int a = y % 19, b = y / 100, c = y % 100, d = b / 4, e = b % 4, f = (b + 8) / 25, g = (b - f + 1) / 3;
+    int h = (19 * a + b - d - g + 15) % 30, i = c / 4, k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+    int m = (a + 11 * h + 22 * l) / 451;
+    int month = (h + l - 7 * m + 114) / 31, day = (h + l - 7 * m + 114) % 31 + 1;
+    return (date_t){(int16_t)y, (uint8_t)month, (uint8_t)day};
+}
+
+bool date_holiday_it(date_t d)
+{
+    static const uint8_t fixed[][2] = {
+        {1, 1}, {1, 6}, {4, 25}, {5, 1}, {6, 2}, {8, 15}, {11, 1}, {12, 8}, {12, 25}, {12, 26},
+    };
+    for (size_t i = 0; i < sizeof(fixed) / sizeof(fixed[0]); i++)
+        if (d.m == fixed[i][0] && d.d == fixed[i][1]) return true;
+    if (d.y >= 2026 && d.m == 10 && d.d == 4) return true;   // national holiday again from 2026
+    int32_t e = date_to_days(date_easter(d.y)), t = date_to_days(d);
+    return t == e || t == e + 1;   // Easter and the Monday after
+}
+
+date_t date_next_holiday_it(date_t d)
+{
+    for (int i = 1; i <= 400; i++) {
+        date_t n = date_add_days(d, i);
+        if (date_holiday_it(n)) return n;
+    }
+    return d;
+}
