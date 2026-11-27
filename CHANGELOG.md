@@ -5,6 +5,14 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Upload page: Delete asks for confirmation inside the page (tap twice); the browser's own
+  dialogs never showed in the mini browser of the pendant's hotspot, so Delete did nothing.
+- Upload page: no focused field is left behind after the PIN (the keyboard kept opening);
+  "Done" closes the keyboard on the name field.
+
+## 0.1.12
+
+
 - Display: windows sent to the panel always start on an even row. An odd chunk height made
   the CO5300 shift the next window and left two rows of old pixels on screen (the dotted line
   through texts on the home screen, gallery and dice).
