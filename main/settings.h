@@ -38,6 +38,12 @@ typedef struct {
     dice_spec_t dice;           // the current roll
     uint8_t  dice_shake;        // shake the pendant to roll
     dice_spec_t dice_fav[DICE_FAVS];   // saved rolls (count 0 = empty)
+    // power (0.1.7)
+    uint8_t  home_loop;         // home list: 1 goes round, 0 stops at the ends
+    uint8_t  power_save;        // CPU frequency scaling + light sleep (not on USB power)
+    uint8_t  wifi_save;         // Wi-Fi off in pendant mode and with the screen off
+    uint16_t battery_mah;       // battery capacity: charge current, warnings
+    uint8_t  battery_care;      // charge to 4.1 V (~90 %) instead of 4.2 V
 } settings_t;
 
 extern settings_t g_set;

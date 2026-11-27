@@ -19,6 +19,7 @@
 #include "ota.h"
 #include "sd.h"
 #include "wifi_mgr.h"
+#include "power.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -344,12 +345,13 @@ void web_start(web_mode_t m)
         wifi_mgr_scan_start();
     }
     reg("/*", HTTP_GET, h_any);
+    power_hold(true);   // uploads write the card from the server task: no light sleep meanwhile
     ESP_LOGI(TAG, "server on (%s)", m == WEB_WIFI ? "wifi setup" : "upload");
 }
 
 void web_stop(void)
 {
-    if (srv) httpd_stop(srv);
+    if (srv) { httpd_stop(srv); power_hold(false); }
     srv = NULL;
     mode = WEB_OFF;
     progress = -1;

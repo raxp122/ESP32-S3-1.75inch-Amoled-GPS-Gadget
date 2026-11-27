@@ -15,15 +15,15 @@ void settings_flush(void) { if (dirty) settings_save(); }
 static void defaults(settings_t *s)
 {
     memset(s, 0, sizeof(*s));
-    s->brightness = 70;
+    s->brightness = 60;
     s->rotation = 0;
     s->accent = 0;
     s->lang = 0;
-    s->sleep_s = 60;
+    s->sleep_s = 30;
     s->wifi_on = 1;
     s->ota_auto = 1;
     s->tz = 0;
-    s->disp_brightness = 70;
+    s->disp_brightness = 60;
     s->disp_interval_s = 30;
     s->disp_shuffle = 0;
     s->disp_off_min = 0;
@@ -35,6 +35,11 @@ static void defaults(settings_t *s)
     s->disp_slideshow = 1;
     s->dice = (dice_spec_t){1, 20, 0, DICE_NORMAL, 0};
     s->dice_shake = 1;
+    s->home_loop = 1;
+    s->power_save = 1;
+    s->wifi_save = 1;
+    s->battery_mah = 500;
+    s->battery_care = 0;
 }
 
 void settings_load(void)
@@ -66,6 +71,7 @@ void settings_load(void)
     if (g_set.night_to_h > 23) g_set.night_to_h = 7;
     if (g_set.disp_interval_s < 3) g_set.disp_interval_s = 30;
     g_set.dice = dice_clamp(g_set.dice);
+    if (g_set.battery_mah < 100 || g_set.battery_mah > 5000) g_set.battery_mah = 500;
 }
 
 void settings_save(void)

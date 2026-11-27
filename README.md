@@ -69,7 +69,7 @@ like the bezel of a watch.
 
 | Gesture | Action |
 |---|---|
-| Slide along the edge (virtual bezel) | turn the launcher ring, scroll lists and the gallery, change values |
+| Slide along the edge (virtual bezel) | turn the launcher ring (the icons follow the finger), scroll lists and the gallery, change values |
 | Swipe up / down | next / previous item |
 | Swipe left | next item (gallery, launcher) |
 | Swipe right | back |
@@ -109,6 +109,14 @@ from here*). Settings › Pendant:
 <img src="docs/img/clock.png" width="180" alt="Clock">
 </p>
 
+### Launcher
+
+The apps sit on a ring along the edge, the selected one at 12 o'clock. At 6 o'clock two
+small strokes mark a horizon: apps sliding towards it fade out and new ones come in from the
+other side, so the list has room for any number of apps. Settings › Screen › **App list**:
+*Loops* (after the last app comes the first again) or *Stops at the ends* (at the first or last
+app that half of the circle stays empty).
+
 ## Apps
 
 - **Pendant**: pendant mode with the last setup.
@@ -131,7 +139,7 @@ from here*). Settings › Pendant:
 | Gesture | Action |
 |---|---|
 | Tap / shake the pendant | roll (the die tumbles, then lands) |
-| Bezel, or tap a die on the lower edge | d4, d6, d8, d10, d12, d20, d100 |
+| Bezel (the selection follows the finger along the lower edge), or tap a die there | d4, d6, d8, d10, d12, d20, d100 |
 | Swipe up / down | more / fewer dice (1 to 20) |
 | Swipe left | normal → advantage → disadvantage (d20: roll twice, keep the higher / lower) |
 | Long press | options |
@@ -142,6 +150,25 @@ listed under the total, discarded ones in brackets. Options: number of dice, mod
 (4d6 drop the lowest, six times, with the D&D modifiers; tap to roll again), **history** of the
 last 30 rolls, shake to roll on/off. Rolls use the ESP32's hardware random generator without
 modulo bias.
+
+## Battery
+
+Made for a small cell (default 500 mAh, set the real capacity in Settings › Battery):
+
+- **Charger** at about 0.5 C for the set capacity; *Charge to 90 %* stops at 4.1 V instead of
+  4.2 V, kinder to the cell.
+- **Protection**: warnings at 15 % and 7 %; at 3 % (and below 3.55 V) the pendant switches itself
+  off, leaving the cell its reserve. The PMU also cuts the power below 3.2 V on its own.
+- **Power saving** (on by default): the CPU runs at 80 MHz and goes into light sleep whenever
+  nothing is happening, 240 MHz only while drawing or decoding. The AMOLED keeps a still picture
+  on its own, so a photo in pendant mode costs little more than the screen. With the screen off
+  the panel sleeps too. Off on USB power (the serial link would drop) and when the setting is off.
+- **Wi-Fi only when needed** (on by default): the home connection pauses in pendant mode and
+  after a minute with the screen off; it comes back by itself in the menus.
+- Inputs are polled less often when only the buttons matter (pendant mode, screen off).
+
+What uses most is the screen itself (brightness and how much of the picture is lit: black is
+free on an AMOLED) and animations, which decode JPEG frames all the time.
 
 ## Media formats
 

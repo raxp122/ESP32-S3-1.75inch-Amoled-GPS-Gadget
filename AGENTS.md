@@ -40,6 +40,11 @@ video caricati dal telefono.
 - Nuova logica pura: prima in `core.c` con i test, poi interfaccia e hardware.
 - Ogni stringa nuova va in `i18n.h` e in `i18n.c` in tutte e due le lingue. Il font copre Latin-1:
   accenti sì, emoji no. Le icone nuove vanno aggiunte in `tools/gen_fonts.py` e in `ui.h`.
+- Niente trasformazioni LVGL (`transform_*`, `image_set_scale`), niente `opa` su oggetti interi e
+  niente `clip_corner`: creano layer extra, strappano sul pannello (senza TE) e consumano. Usare
+  `text_opa` / `bg_opa` / `image_opa`, dimensioni vere e immagini già pronte in memoria.
+- Batteria: la CPU va a 240 MHz solo dentro `power_boost_begin/end`; chi scrive la SD da altri task
+  (server, OTA) tiene `power_hold`. Niente timer periodici veloci (impediscono il light sleep).
 - Le LVGL image che puntano a buffer statici: niente `free` in `leave()` (la vecchia schermata viene
   ancora disegnata durante la dissolvenza).
 - Ogni PR aggiunge le sue modifiche in `CHANGELOG.md` (sezione "Next", in inglese). README in inglese.

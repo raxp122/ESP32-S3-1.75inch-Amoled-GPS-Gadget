@@ -87,9 +87,11 @@ static bool decode_show(const uint8_t *jpg, int len)
 static void play_image(const char *path, int64_t until)
 {
     int len = 0;
-    uint8_t *j = media_read_file(path, &len, 4 * 1024 * 1024);
+    power_boost_begin();   // full speed to read and decode, then the chip may sleep: the
+    uint8_t *j = media_read_file(path, &len, 4 * 1024 * 1024);   // AMOLED keeps the picture
     bool ok = j && decode_show(j, len);
     free(j);
+    power_boost_end();
     if (!ok) { ESP_LOGW(TAG, "cannot show %s", path); vTaskDelay(pdMS_TO_TICKS(500)); return; }
     // a still image: nothing to do until the slideshow moves on (or the screen comes back)
     while (!quit && !want_next && (!until || now_ms() < until)) {
@@ -116,6 +118,7 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
     }
     bool loop_done = false;
     int64_t due = now_ms();
+    power_boost_begin();   // animations decode all the time: full speed until they end
     for (uint32_t i = 0; !quit && !want_next; i = (i + 1) % info.frames) {
         if (i == 0 && loop_done && until && now_ms() >= until) break;   // slideshow: at least one full loop
         amj_frame_t fr;
@@ -127,7 +130,12 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
         }
         int k = shown == 0 ? 1 : 0;
         if (!media_decode(inbuf, fr.size, frame[k], SCR_W, SCR_H)) continue;
-        if (!can_draw()) { wait_drawable(); due = now_ms(); }
+        if (!can_draw()) {   // screen off / ring overlay: no full speed while waiting
+            power_boost_end();
+            wait_drawable();
+            power_boost_begin();
+            due = now_ms();
+        }
         if (!wait_until(due)) break;
         show_frame(k);
         // late (slow card, big frame): do not try to catch up, just keep the rhythm
@@ -135,6 +143,7 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
         if (due < now_ms() - 200) due = now_ms();
         if (i == info.frames - 1) loop_done = true;
     }
+    power_boost_end();
     heap_caps_free(index);
     fclose(f);
 }

@@ -29,6 +29,7 @@ static const char *TAG = "input";
 #define PULL_ZONE_Y     80
 
 static ev_handler_t handler;
+static lv_timer_t *poll_timer;
 static int64_t last_activity_us;
 static volatile bool touch_on = true, dtap_wanted;
 
@@ -89,6 +90,12 @@ void input_set_touch(bool on)
     if (!on) { g.down = false; tap.pending = false; }
 }
 bool input_touch_enabled(void) { return touch_on; }
+void input_set_poll_ms(int ms)
+{
+    static int cur = POLL_MS;
+    if (poll_timer && cur != ms) { cur = ms; lv_timer_set_period(poll_timer, ms); }
+}
+
 void input_set_double_tap(bool w) { dtap_wanted = w; if (!w) tap.pending = false; }
 
 static float angle_of(int x, int y) { return atan2f((float)(y - SCR_C), (float)(x - SCR_C)) * 57.29578f; }
@@ -213,7 +220,7 @@ void input_init(ev_handler_t h)
     // a PWR press that powered the board on is not a click
     pwr.down = board_btn_pwr();
     pwr.fired = true;
-    lv_timer_create(poll_cb, POLL_MS, NULL);
+    poll_timer = lv_timer_create(poll_cb, POLL_MS, NULL);
 }
 
 const char *ev_name(ev_t e)

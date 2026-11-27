@@ -124,8 +124,8 @@ static void show_result(void)
     snprintf(b, sizeof(b), "%d", last.total);
     lv_label_set_text(num_l, b);
     lv_obj_set_style_text_opa(num_l, LV_OPA_COVER, 0);
-    lv_obj_set_style_transform_rotation(die, 0, 0);
-    lv_obj_set_style_transform_scale(die, 256, 0);
+    lv_obj_set_style_translate_x(die, 0, 0);
+    lv_obj_set_style_translate_y(die, 0, 0);
     color(last.crit ? C_GOLD : last.fumble ? C_WARN : C_TEXT);
     lv_obj_set_style_line_color(outline, last.crit ? C_GOLD : last.fumble ? C_WARN : ui_accent(), 0);
     lv_obj_set_style_line_color(inner, last.crit ? C_GOLD : last.fumble ? C_WARN : ui_accent(), 0);
@@ -155,10 +155,11 @@ static void anim_cb(lv_timer_t *t)
         show_result();
         return;
     }
-    // tumbling: spin slowing down, a little bounce, random faces
-    float p = anim_step / (float)steps, ease = 1 - (1 - p) * (1 - p);
-    lv_obj_set_style_transform_rotation(die, (int)(ease * 720 * 10) % 3600, 0);
-    lv_obj_set_style_transform_scale(die, 256 + (int)(40 * sinf(p * 3.14159f)), 0);
+    // rattling: the die jumps around less and less while random faces flash by (a plain
+    // offset, no LVGL transform: those need extra layers and tear on this panel)
+    float p = anim_step / (float)steps, amp = 14 * (1 - p);
+    lv_obj_set_style_translate_x(die, (int)(amp * sinf(anim_step * 2.3f)), 0);
+    lv_obj_set_style_translate_y(die, (int)(-amp * fabsf(cosf(anim_step * 1.7f))), 0);
     char b[8];
     int lo = g_set.dice.count + g_set.dice.mod, hi = g_set.dice.count * g_set.dice.sides + g_set.dice.mod;
     snprintf(b, sizeof(b), "%d", lo + (int)(esp_random() % (uint32_t)(hi - lo + 1)));
@@ -263,8 +264,6 @@ static void enter(lv_obj_t *root, void *arg)
     lv_obj_remove_style_all(die);
     lv_obj_set_size(die, DIE_R * 2 + 1, DIE_R * 2 + 26);
     lv_obj_align(die, LV_ALIGN_CENTER, 0, -6);
-    lv_obj_set_style_transform_pivot_x(die, DIE_R, 0);
-    lv_obj_set_style_transform_pivot_y(die, DIE_R + 6, 0);
     lv_obj_remove_flag(die, LV_OBJ_FLAG_SCROLLABLE);
     outline = lv_line_create(die);
     inner = lv_line_create(die);
@@ -319,8 +318,10 @@ static bool event(ev_t e, int x, int y)
         }
         roll();
         return true;
-    case EV_DIAL_CW: set_type(type_index() + 1); return true;
-    case EV_DIAL_CCW: set_type(type_index() - 1); return true;
+    // the types sit along the lower edge with d4 on the left: a clockwise slide moves right to
+    // left down there, so the selection follows the finger towards the smaller dice
+    case EV_DIAL_CW: set_type(type_index() - 1); return true;
+    case EV_DIAL_CCW: set_type(type_index() + 1); return true;
     case EV_SWIPE_UP: if (g_set.dice.count < DICE_MAX) { g_set.dice.count++; changed(); } return true;
     case EV_SWIPE_DOWN: if (g_set.dice.count > 1) { g_set.dice.count--; changed(); } return true;
     case EV_SWIPE_LEFT:

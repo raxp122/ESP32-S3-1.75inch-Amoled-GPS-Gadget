@@ -13,6 +13,9 @@ typedef struct {
 
 void wifi_mgr_init(void);
 void wifi_mgr_apply(void);                       // after changing g_set.wifi_on
+// battery saving: the home connection pauses (radio off) while nothing needs it; the hotspot
+// and scans still work. Reconnects by itself when released.
+void wifi_mgr_set_suspend(bool suspend);
 bool wifi_mgr_connect(const char *ssid, const char *pass);   // saves and connects
 void wifi_mgr_forget(void);
 void wifi_mgr_reconnect(void);

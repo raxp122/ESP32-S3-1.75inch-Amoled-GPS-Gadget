@@ -59,3 +59,8 @@ bool  board_btn_boot(void);            // true = pressed
 bool  board_btn_pwr(void);
 
 void  board_gps_enable(bool on);       // holds the GPS of the -G version in reset when off
+
+// Charger and protection for the battery in use (mAh). care: stop charging at 4.1 V (about
+// 90 %) instead of 4.2 V, kinder to the cell. The PMU also switches the board off on its own
+// below 3.2 V, under the firmware's own low-battery shutdown.
+void  board_battery_setup(int capacity_mah, bool care);
