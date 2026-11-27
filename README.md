@@ -199,6 +199,9 @@ Made for a small cell (default 500 mAh, set the real capacity in Settings › Ba
 - **Wi-Fi only when needed** (on by default): the home connection pauses in pendant mode and
   after a minute with the screen off; it comes back by itself in the menus.
 - Inputs are polled less often when only the buttons matter (pendant mode, screen off).
+- **Pendant mode with the screen off** (PWR): the player stops reading and decoding until the
+  screen is back; locked, the IMU rests and the housekeeping timer runs once a second. With the
+  screen on, animations use full speed only to decode each frame.
 - **Percentage**: from the PMU fuel gauge. A gauge that has not learned the battery yet (a new
   cell) can be far off, so then the percentage comes from the voltage and shows a `~` (e.g.
   `~78%`) until the two agree. Changing the capacity in the settings, or plugging a battery in

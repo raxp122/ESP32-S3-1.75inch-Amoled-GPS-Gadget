@@ -5,6 +5,11 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Pendant, battery: with the screen off nothing is read or decoded and the player checks only
+  every 150 ms; animations run at full CPU speed only while reading and decoding each frame
+  (the wait until the next frame is at the low clock / light sleep); a still image is checked
+  every 100 ms instead of 40. Locked with PWR, the IMU is not read and the UI housekeeping
+  timer runs once a second instead of five times.
 - Pendant: *Content* setting (images and videos / images only / GIFs and videos only) and a
   slideshow interval for each (default 10 s, 60 s, 20 s). BOOT's next media follows the content
   too; a media opened from the gallery is still shown as chosen.

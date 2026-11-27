@@ -117,9 +117,10 @@ void power_tick(void)
 {
     static int n;
     n++;
-    // movement
+    // movement (not while locked with PWR: nothing may wake the screen then, the IMU rests)
     vec3_t a;
-    if (board_imu_ok() && board_imu_accel(&a)) {
+    if (ui_is_off() && ui_is_locked()) have_prev = false;
+    else if (board_imu_ok() && board_imu_accel(&a)) {
         if (have_prev) {
             float d = fabsf(a.x - prev.x) + fabsf(a.y - prev.y) + fabsf(a.z - prev.z);
             if (d > MOTION_G) last_motion_us = esp_timer_get_time();

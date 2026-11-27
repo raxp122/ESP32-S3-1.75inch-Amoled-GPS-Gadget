@@ -69,9 +69,11 @@ static bool wait_until(int64_t t)
     return false;
 }
 
+// screen off (or a ring overlay): nothing is read or decoded meanwhile. With the panel dark
+// the check is slow, so the chip spends the time in light sleep.
 static void wait_drawable(void)
 {
-    while (!quit && !want_next && !can_draw()) vTaskDelay(pdMS_TO_TICKS(30));
+    while (!quit && !want_next && !can_draw()) vTaskDelay(pdMS_TO_TICKS(display_is_dark() ? 150 : 30));
 }
 
 // decodes jpg into the free buffer and shows it
@@ -97,7 +99,7 @@ static void play_image(const char *path, int64_t until)
     // a still image: nothing to do until the slideshow moves on (or the screen comes back)
     while (!quit && !want_next && (!until || now_ms() < until)) {
         if (!can_draw()) { wait_drawable(); if (can_draw() && shown >= 0) display_direct_push(frame[shown]); }
-        vTaskDelay(pdMS_TO_TICKS(40));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
@@ -119,24 +121,29 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
     }
     bool loop_done = false;
     int64_t due = now_ms();
-    power_boost_begin();   // animations decode all the time: full speed until they end
     for (uint32_t i = 0; !quit && !want_next; i = (i + 1) % info.frames) {
         if (i == 0 && loop_done && until && now_ms() >= until) break;   // slideshow: at least one full loop
+        if (!can_draw()) {   // screen off / ring overlay: stop here, read and decode nothing
+            wait_drawable();
+            if (quit || want_next) break;
+            due = now_ms();
+        }
+        // full speed only to read and decode the frame; the wait until it is due runs at the
+        // low clock (and in light sleep)
+        power_boost_begin();
         amj_frame_t fr;
         if (!amj_entry(index, i, size, &fr) || !ensure_in(fr.size) || fseek(f, fr.offset, SEEK_SET) ||
             fread(inbuf, 1, fr.size, f) != fr.size) {
+            power_boost_end();
             ESP_LOGW(TAG, "%s: frame %u unreadable", path, (unsigned)i);
             vTaskDelay(pdMS_TO_TICKS(200));
             break;
         }
         int k = shown == 0 ? 1 : 0;
-        if (!media_decode(inbuf, fr.size, frame[k], SCR_W, SCR_H)) continue;
-        if (!can_draw()) {   // screen off / ring overlay: no full speed while waiting
-            power_boost_end();
-            wait_drawable();
-            power_boost_begin();
-            due = now_ms();
-        }
+        bool ok = media_decode(inbuf, fr.size, frame[k], SCR_W, SCR_H);
+        power_boost_end();
+        if (!ok) continue;
+        if (!can_draw()) { wait_drawable(); due = now_ms(); }
         if (!wait_until(due)) break;
         show_frame(k);
         // late (slow card, big frame): do not try to catch up, just keep the rhythm
@@ -144,7 +151,6 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
         if (due < now_ms() - 200) due = now_ms();
         if (i == info.frames - 1) loop_done = true;
     }
-    power_boost_end();
     heap_caps_free(index);
     fclose(f);
 }
