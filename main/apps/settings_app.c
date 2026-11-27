@@ -116,13 +116,22 @@ static menu_t battery_menu = {S_SET_BATTERY, battery_items, 5, 0};
 static void v_dbright(char *b, int n) { snprintf(b, n, "%d%%", g_set.disp_brightness); }
 static void a_dbright(int d) { g_set.disp_brightness = clampi(g_set.disp_brightness + d * 5, 5, 100); settings_mark(); }
 static const int interval_vals[] = {5, 10, 20, 30, 60, 120, 300, 600, 1800};
-static void v_interval(char *b, int n)
+static void fmt_secs(char *b, int n, int s)
 {
-    int s = g_set.disp_interval_s;
     if (s < 60) snprintf(b, n, "%d s", s);
     else snprintf(b, n, "%d min", s / 60);
 }
-static void a_interval(int d) { g_set.disp_interval_s = step_list(interval_vals, 9, g_set.disp_interval_s, d); settings_mark(); }
+// one interval per content choice
+static void v_int_all(char *b, int n) { fmt_secs(b, n, g_set.disp_int_all_s); }
+static void v_int_img(char *b, int n) { fmt_secs(b, n, g_set.disp_int_img_s); }
+static void v_int_anim(char *b, int n) { fmt_secs(b, n, g_set.disp_int_anim_s); }
+static void step_int(uint16_t *v, int d) { *v = (uint16_t)step_list(interval_vals, 9, *v, d); settings_mark(); }
+static void a_int_all(int d) { step_int(&g_set.disp_int_all_s, d); }
+static void a_int_img(int d) { step_int(&g_set.disp_int_img_s, d); }
+static void a_int_anim(int d) { step_int(&g_set.disp_int_anim_s, d); }
+static const int filter_names[MEDIA_FILTERS] = {S_FILTER_ALL, S_FILTER_IMAGES, S_FILTER_ANIM};
+static void v_filter(char *b, int n) { snprintf(b, n, "%s", T(filter_names[g_set.disp_filter % MEDIA_FILTERS])); }
+static void s_filter(void) { g_set.disp_filter = (uint8_t)((g_set.disp_filter + 1) % MEDIA_FILTERS); settings_mark(); }
 static void v_shuffle(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.disp_shuffle)); }
 static void s_shuffle(void) { g_set.disp_shuffle = !g_set.disp_shuffle; settings_mark(); }
 static const int off_vals[] = {0, 5, 10, 15, 30, 60, 120, 240};
@@ -138,13 +147,16 @@ static void s_pmode(void) { g_set.disp_slideshow = !g_set.disp_slideshow; settin
 
 static const menu_item_t pendant_items[] = {
     {IC_PLAY, S_PENDANT_MODE, NULL, v_pmode, s_pmode},
+    {IC_FILM, S_PENDANT_FILTER, NULL, v_filter, s_filter},
     {IC_SUN, S_BRIGHTNESS, NULL, v_dbright, NULL, a_dbright},
-    {IC_SYNC, S_INTERVAL, NULL, v_interval, NULL, a_interval},
+    {IC_SYNC, S_INTERVAL_ALL, NULL, v_int_all, NULL, a_int_all},
+    {IC_IMAGE, S_INTERVAL_IMG, NULL, v_int_img, NULL, a_int_img},
+    {IC_GIF, S_INTERVAL_ANIM, NULL, v_int_anim, NULL, a_int_anim},
     {IC_SHUFFLE, S_SHUFFLE, NULL, v_shuffle, s_shuffle},
     {IC_HOURGLASS, S_PENDANT_OFF, NULL, v_doff, NULL, a_doff},
     {IC_WALK, S_MOTION_WAKE, NULL, v_motion, s_motion},
 };
-static menu_t pendant_menu = {S_APP_PENDANT, pendant_items, 6, 0};
+static menu_t pendant_menu = {S_APP_PENDANT, pendant_items, 9, 0};
 
 /* ---------------- Night ---------------- */
 
@@ -223,7 +235,11 @@ static void a_lang(int d)
 static void v_tz(char *b, int n) { snprintf(b, n, "%s", ui_tz_name(g_set.tz)); }
 static void a_tz(int d) { g_set.tz = (g_set.tz + d + ui_tz_count()) % ui_tz_count(); ui_apply_tz(); settings_mark(); }
 static void v_screen(char *b, int n) { snprintf(b, n, "%d%%  ·  %d\xC2\xB0", g_set.brightness, g_set.rotation * 90); }
-static void v_pendant(char *b, int n) { v_interval(b, n); }
+static void v_pendant(char *b, int n)
+{
+    if (g_set.disp_slideshow) snprintf(b, n, "%s", T(filter_names[g_set.disp_filter % MEDIA_FILTERS]));
+    else snprintf(b, n, "%s", T(S_SINGLE_MEDIA));
+}
 static void v_night_sum(char *b, int n)
 {
     if (!g_set.night_on) snprintf(b, n, "%s", T(S_OFF));

@@ -48,6 +48,12 @@ typedef struct {
     uint8_t  home_shortcut;     // app on the fixed button at the bottom of the home ring (home.c order)
     // 0.1.21
     uint8_t  clock_on;          // the clock app keeps the screen on (dimmed when not touched)
+    // 0.1.3x: what pendant mode plays and a slideshow interval for each choice
+    // (disp_interval_s above is no longer used)
+    uint8_t  disp_filter;       // MEDIA_FILTER_ALL / _IMAGES / _ANIM
+    uint16_t disp_int_all_s;    // slideshow interval: everything
+    uint16_t disp_int_img_s;    //                     images only
+    uint16_t disp_int_anim_s;   //                     GIFs and videos only
 } settings_t;
 
 extern settings_t g_set;
@@ -56,4 +62,5 @@ void settings_load(void);
 void settings_save(void);
 void settings_mark(void);    // changed: saved at the next settings_flush() (menus leaving)
 void settings_flush(void);
+uint16_t *settings_interval(int filter);   // the slideshow interval (s) for a media filter
 void settings_reset(void);

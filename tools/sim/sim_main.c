@@ -114,6 +114,9 @@ int main(int argc, char **argv)
     g_set.ota_auto = 1;
     g_set.disp_brightness = 70;
     g_set.disp_interval_s = 30;
+    g_set.disp_int_all_s = 10;
+    g_set.disp_int_img_s = 60;
+    g_set.disp_int_anim_s = 20;
     g_set.motion_wake = 1;
     g_set.night_from_h = 23;
     g_set.night_to_h = 7;

@@ -1,4 +1,5 @@
 // pendant.c - pendant (display) mode: one media in a loop or a slideshow, full screen.
+// The content setting limits it to images, or to GIFs and videos, each with its own interval.
 // Touch is off. BOOT: next media. BOOT held 2 s: back to the menus. PWR: screen off + lock.
 //
 // A player task decodes JPEG frames (esp_new_jpeg) into two full-screen buffers and pushes
@@ -148,19 +149,59 @@ static void play_anim(const char *path, uint32_t size, int64_t until)
     fclose(f);
 }
 
+// kinds of the media on the card, for the content filter (images / GIFs and videos / both)
+static uint8_t *kinds;
+static int kinds_len;
+static bool filter_warned;
+
+static bool fill_kinds(int n)
+{
+    if (n > kinds_len) {
+        free(kinds);
+        kinds = malloc(n);
+        kinds_len = kinds ? n : 0;
+        if (!kinds) return false;
+    }
+    for (int i = 0; i < n; i++) {
+        const media_item_t *m = media_get(i);
+        kinds[i] = m ? m->kind : MEDIA_NONE;
+    }
+    return true;
+}
+
+// the filter of the settings, or "everything" when no media passes it
+static int active_filter(int n)
+{
+    int f = g_set.disp_filter % MEDIA_FILTERS;
+    if (f != MEDIA_FILTER_ALL && media_filter_count(kinds, n, f) == 0) {
+        if (!filter_warned) { filter_warned = true; ui_toast_async(T(S_NO_MEDIA_FILTER)); }
+        f = MEDIA_FILTER_ALL;
+    }
+    return f;
+}
+
 static void player_task(void *arg)
 {
+    bool first = true;
     while (!quit) {
         int n = media_count();
-        if (!n) { vTaskDelay(pdMS_TO_TICKS(300)); continue; }
+        if (!n || !fill_kinds(n)) { vTaskDelay(pdMS_TO_TICKS(300)); continue; }
         if (cur >= n) cur = 0;
+        int filter = active_filter(n);
+        // a slideshow starts from the first media of the chosen kind; a single media chosen in
+        // the gallery is shown as it is
+        if (first && start_arg.slideshow) {
+            int c = media_pick_first(kinds, n, cur, filter);
+            if (c >= 0) cur = c;
+        }
+        first = false;
         const media_item_t *m = media_get(cur);
         char path[96];
         snprintf(path, sizeof(path), MEDIA_DIR "/%s", m->file);
         int kind = m->kind;
         uint32_t size = m->size;
         if (strcmp(g_set.disp_last, m->file)) { strlcpy(g_set.disp_last, m->file, sizeof(g_set.disp_last)); dirty_last = true; }
-        int64_t until = start_arg.slideshow ? now_ms() + g_set.disp_interval_s * 1000LL : 0;
+        int64_t until = start_arg.slideshow ? now_ms() + *settings_interval(filter) * 1000LL : 0;
         want_next = false;
         if (kind == MEDIA_ANIM) play_anim(path, size, until);
         else play_image(path, until);
@@ -169,7 +210,11 @@ static void player_task(void *arg)
         bool by_button = want_next;
         want_next = false;
         if (!start_arg.slideshow && !by_button) continue;   // single media: loop again
-        cur = start_arg.slideshow && g_set.disp_shuffle ? shuffle_next(cur, n, &seed) : (cur + 1) % n;
+        n = media_count();
+        if (!n || !fill_kinds(n)) continue;
+        filter = active_filter(n);
+        int next = media_pick_next(kinds, n, cur, filter, start_arg.slideshow && g_set.disp_shuffle, &seed);
+        cur = next >= 0 ? next : (cur + 1) % n;
     }
     running = false;
     xSemaphoreGive(done_sem);
@@ -197,6 +242,7 @@ static void enter(lv_obj_t *root, void *arg)
     cur = start_arg.start;
     seed = esp_random();
     quit = want_next = false;
+    filter_warned = false;
     grace_until = 0;
     was_off = false;
     power_motion_reset();

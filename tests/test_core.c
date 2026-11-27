@@ -276,8 +276,37 @@ static void test_calendar(void)
     CHECK(same(date_next_holiday_it(D(2026, 3, 1)), D(2026, 4, 5)));
 }
 
+static void test_media_filter(void)
+{
+    const uint8_t k[] = {MEDIA_IMAGE, MEDIA_ANIM, MEDIA_IMAGE, MEDIA_ANIM, MEDIA_ANIM};
+    CHECK(media_filter_count(k, 5, MEDIA_FILTER_ALL) == 5);
+    CHECK(media_filter_count(k, 5, MEDIA_FILTER_IMAGES) == 2);
+    CHECK(media_filter_count(k, 5, MEDIA_FILTER_ANIM) == 3);
+    CHECK(media_pick_first(k, 5, 0, MEDIA_FILTER_ANIM) == 1);
+    CHECK(media_pick_first(k, 5, 4, MEDIA_FILTER_IMAGES) == 0);   // wraps round
+    CHECK(media_pick_first(k, 5, 2, MEDIA_FILTER_IMAGES) == 2);
+    CHECK(media_pick_first(k, 0, 0, MEDIA_FILTER_ALL) == -1);
+    CHECK(media_pick_next(k, 5, 0, MEDIA_FILTER_IMAGES, false, NULL) == 2);
+    CHECK(media_pick_next(k, 5, 2, MEDIA_FILTER_IMAGES, false, NULL) == 0);
+    CHECK(media_pick_next(k, 5, 3, MEDIA_FILTER_ANIM, false, NULL) == 4);
+    CHECK(media_pick_next(k, 5, 4, MEDIA_FILTER_ANIM, false, NULL) == 1);
+    CHECK(media_pick_next(k, 5, 4, MEDIA_FILTER_ALL, false, NULL) == 0);
+    const uint8_t only[] = {MEDIA_IMAGE, MEDIA_IMAGE};
+    CHECK(media_pick_next(only, 2, 0, MEDIA_FILTER_ANIM, false, NULL) == -1);
+    CHECK(media_pick_first(only, 2, 1, MEDIA_FILTER_ANIM) == -1);
+    uint32_t seed = 7;
+    for (int t = 0; t < 200; t++) {
+        int cur = t % 5, n = media_pick_next(k, 5, cur, MEDIA_FILTER_ANIM, true, &seed);
+        CHECK(n == 1 || n == 3 || n == 4);
+        if (k[cur] == MEDIA_ANIM) CHECK(n != cur);
+    }
+    const uint8_t one[] = {MEDIA_IMAGE, MEDIA_ANIM};
+    CHECK(media_pick_next(one, 2, 1, MEDIA_FILTER_ANIM, true, &seed) == 1);   // the only one
+}
+
 int main(void)
 {
+    test_media_filter();
     test_calendar();
     test_battery();
     test_daggerheart();

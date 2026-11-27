@@ -73,6 +73,7 @@ void settings_save(void) {}
 void settings_mark(void) {}
 void settings_flush(void) {}
 void settings_reset(void) {}
+uint16_t *settings_interval(int f) { return f == 1 ? &g_set.disp_int_img_s : f == 2 ? &g_set.disp_int_anim_s : &g_set.disp_int_all_s; }
 
 /* ---- wifi ---- */
 wifi_state_t wifi_mgr_state(void) { return sim_wifi; }

@@ -98,7 +98,10 @@ from here*). Settings › Pendant:
 - *Plays*: *Single media* (BOOT for the next) or *Slideshow* (the gallery's tap / double tap
   set it too); an animation in a slideshow always finishes its loop before the next media
 - *Brightness* of the pendant (separate from the menus)
-- *Interval* of the slideshow (5 s to 30 min) and *Shuffle*
+- *Content*: *Images and videos*, *Images only* or *GIFs and videos only* (if the card has none
+  of that kind, everything is shown). It applies to the slideshow and to BOOT's next media.
+- An *Interval* for each content choice (5 s to 30 min): mixed 10 s, images 60 s, GIFs and
+  videos 20 s by default; and *Shuffle*
 - *Screen off after* (never, 5 min to 4 h) and *Wake on movement*: the timer counts from the last
   movement (IMU) and moving wakes the screen again
 - Settings › **Night**: from/to hours, dimmed or screen off at night (a button press keeps it on

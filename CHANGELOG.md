@@ -5,6 +5,9 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Pendant: *Content* setting (images and videos / images only / GIFs and videos only) and a
+  slideshow interval for each (default 10 s, 60 s, 20 s). BOOT's next media follows the content
+  too; a media opened from the gallery is still shown as chosen.
 - Calendar: the rings now turn with the bezel (later days, months and years sit
   counter-clockwise, so turning clockwise brings them to the window); before they ran the
   other way. Swipe down now moves the active ring inwards (days → months → years), as the
