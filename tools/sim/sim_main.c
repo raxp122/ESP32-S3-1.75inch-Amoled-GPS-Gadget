@@ -278,7 +278,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < 5; i++) ev(EV_DIAL_CW, 400, 200);   // across the end of the month
     run(400);
     shot("42_calendar_next_month");
-    ev(EV_SWIPE_LEFT, SCR_C, 200);                           // the bezel turns the months
+    ev(EV_SWIPE_DOWN, SCR_C, 200);                           // the bezel turns the months
     ev(EV_DIAL_CW, 400, 200);
     run(400);
     shot("43_calendar_months");

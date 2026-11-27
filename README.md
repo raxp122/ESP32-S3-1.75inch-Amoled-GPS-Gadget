@@ -145,7 +145,8 @@ window at 12 o'clock and the date is in the middle. Offline, no account.
 
 - **Bezel**: turns the active ring. Past the end of a month the months ring turns too, past the
   end of a year the years ring.
-- **Swipe**: the active ring, days → months → years → days (the dots under the date show it).
+- **Swipe** down (or left): the active ring moves inwards, days → months → years → days; up (or
+  right) goes back out. The dots under the date show it.
   A tap on a ring makes it active.
 - **Tap in the middle**: the day page (working day or holiday, days from today, the next holiday,
   ISO week, day of the year); the bezel moves it by one day, a tap goes back.
