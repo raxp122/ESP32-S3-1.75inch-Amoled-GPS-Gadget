@@ -208,8 +208,27 @@ static void test_daggerheart(void)
     CHECK(dice_clamp(s).mode == DICE_NORMAL);
 }
 
+static void test_battery(void)
+{
+    CHECK(battery_percent_from_volts(4.20f) == 100);
+    CHECK(battery_percent_from_volts(4.09f) == 94);
+    CHECK(battery_percent_from_volts(3.78f) == 50);
+    CHECK(battery_percent_from_volts(3.30f) == 0 && battery_percent_from_volts(3.0f) == 0);
+    CHECK(battery_percent_from_volts(0) == 0);
+    for (float v = 3.2f; v < 4.25f; v += 0.01f)   // never goes down while the voltage goes up
+        CHECK(battery_percent_from_volts(v + 0.01f) >= battery_percent_from_volts(v));
+    CHECK(battery_percent_pick(0, 4.09f, false) == 94);    // new battery, gauge not learned yet
+    CHECK(battery_percent_pick(-1, 3.78f, false) == 50);   // no gauge reading
+    CHECK(battery_percent_pick(85, 4.09f, false) == 85);   // gauge plausible: the gauge wins
+    CHECK(battery_percent_pick(40, 4.15f, true) == 40);    // charging: high voltage is expected
+    CHECK(battery_percent_pick(5, 3.50f, false) == 5);     // really low: the gauge wins
+    CHECK(battery_percent_pick(70, 0, false) == 70);       // no voltage
+    CHECK(battery_percent_pick(0, 4.12f, true) == 97);     // charging, gauge stuck at zero
+}
+
 int main(void)
 {
+    test_battery();
     test_daggerheart();
     test_dice();
     test_kind();

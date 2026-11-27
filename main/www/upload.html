@@ -75,7 +75,7 @@ small{color:var(--dim)}
         <div><label data-t="quality"></label><select id="q"><option value="0.6" data-t="qLow"></option><option value="0.72" selected data-t="qMid"></option><option value="0.85" data-t="qHigh"></option></select></div>
       </div>
     </div>
-    <label data-t="name"></label><input type="text" id="name" maxlength="40" enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <label data-t="name"></label><input type="text" id="name" maxlength="40" readonly enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false">
     <div class="row" style="margin-top:16px"><button class="ghost" id="skip" data-t="skip"></button><button id="send" data-t="send"></button></div>
     <div id="prog" class="hidden"><div class="bar"><div id="barIn"></div></div><div class="hint" id="progT"></div></div>
   </div>
@@ -373,6 +373,10 @@ function safeName(n) {
 
 async function openFile(f) {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  stopPreview();
+  src = null;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, S, S);
   $("editor").classList.remove("hidden");
   $("prog").classList.add("hidden");
   $("send").disabled = $("skip").disabled = false;
@@ -395,8 +399,18 @@ async function openFile(f) {
       video = document.createElement("video");
       video.muted = true; video.playsInline = true; video.preload = "auto";
       video.src = URL.createObjectURL(f);
-      await new Promise((r, j) => { video.onloadeddata = r; video.onerror = j; });
-      try { await video.play(); video.pause(); } catch (e) {}
+      // Safari (iPhone) does not load anything until the video is started: start it muted
+      // straight away and wait for the first frame (or give up after a while)
+      const ready = new Promise((r, j) => {
+        video.onloadeddata = r;
+        video.oncanplay = r;
+        video.onerror = j;
+        setTimeout(() => (video.readyState >= 2 ? r() : j(new Error("timeout"))), 8000);
+      });
+      video.load();
+      video.play().catch(() => {});
+      await ready;
+      video.pause();
       await seek(0);
       src = video; srcW = video.videoWidth; srcH = video.videoHeight;
       $("vidOpts").classList.remove("hidden");
@@ -549,6 +563,10 @@ $("pick").onclick = () => $("file").click();
 $("file").onchange = e => { files = [...e.target.files]; fileIdx = 0; if (files.length) openFile(files[0]); };
 $("send").onclick = send;
 $("name").addEventListener("keydown", e => { if (e.key == "Enter") { e.preventDefault(); $("name").blur(); } });
+// the keyboard only when the name is tapped on purpose: read-only otherwise, so no automatic
+// focus (iOS brings the keyboard up for any focused field)
+$("name").addEventListener("click", () => { const n = $("name"); if (n.readOnly) { n.readOnly = false; n.focus(); } });
+$("name").addEventListener("blur", () => { $("name").readOnly = true; });
 $("skip").onclick = nextFile;
 
 loadInfo().catch(() => {});

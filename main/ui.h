@@ -171,6 +171,11 @@ extern const screen_t scr_home, scr_gallery, scr_pendant, scr_upload, scr_clock,
                       scr_quick, scr_settings, scr_wifi, scr_wifi_scan, scr_wifi_portal, scr_ota,
                       scr_keyboard, scr_dice, scr_dice_favs, scr_dice_hist, scr_dice_stats;
 
+// the launcher's apps (for the shortcut setting)
+int  home_app_count(void);
+const char *home_app_name(int i);
+#define HOME_SHORTCUT_DEFAULT 5   // Settings
+
 // pendant mode: start = index in the media list, slideshow or a single media
 typedef struct { int start; bool slideshow; } pendant_arg_t;
 void pendant_start(int index, bool slideshow);

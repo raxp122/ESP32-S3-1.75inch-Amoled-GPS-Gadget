@@ -1,6 +1,7 @@
 // settings.c - NVS storage. The NVS partition sits at the end of the flash (partitions.csv),
 // where neither the USB image nor an OTA update ever writes.
 #include "settings.h"
+#include "ui.h"
 #include <string.h>
 #include "nvs_flash.h"
 #include "nvs.h"
@@ -40,6 +41,7 @@ static void defaults(settings_t *s)
     s->wifi_save = 1;
     s->battery_mah = 500;
     s->battery_care = 0;
+    s->home_shortcut = HOME_SHORTCUT_DEFAULT;
 }
 
 void settings_load(void)

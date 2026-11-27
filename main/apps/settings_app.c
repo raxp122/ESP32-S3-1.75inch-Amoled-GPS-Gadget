@@ -56,14 +56,23 @@ static void a_sleep(int d) { g_set.sleep_s = step_list(sleep_vals, 7, g_set.slee
 static void v_homeloop(char *b, int n) { snprintf(b, n, "%s", T(g_set.home_loop ? S_HOME_LOOP : S_HOME_STOP)); }
 static void a_homeloop(int d) { g_set.home_loop = !g_set.home_loop; settings_mark(); }
 
+static void v_shortcut(char *b, int n) { snprintf(b, n, "%s", home_app_name(g_set.home_shortcut)); }
+static void a_shortcut(int d)
+{
+    int n = home_app_count();
+    g_set.home_shortcut = (uint8_t)(((g_set.home_shortcut + d) % n + n) % n);
+    settings_mark();
+}
+
 static const menu_item_t screen_items[] = {
     {IC_SUN, S_BRIGHTNESS, NULL, v_bright, NULL, a_bright},
     {IC_ROTATE, S_ROTATION, NULL, v_rot, NULL, a_rot},
     {IC_PALETTE, S_ACCENT, NULL, v_accent, NULL, a_accent},
     {IC_HOURGLASS, S_AUTO_OFF, NULL, v_sleep, NULL, a_sleep},
     {IC_HOME, S_HOME_LIST, NULL, v_homeloop, NULL, a_homeloop},
+    {IC_STAR, S_HOME_SHORTCUT, NULL, v_shortcut, NULL, a_shortcut},
 };
-static menu_t screen_menu = {S_SET_SCREEN, screen_items, 5, 0};
+static menu_t screen_menu = {S_SET_SCREEN, screen_items, 6, 0};
 
 /* ---------------- Battery ---------------- */
 

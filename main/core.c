@@ -130,6 +130,32 @@ bool query_param(const char *q, const char *key, char *out, size_t n)
     return false;
 }
 
+int battery_percent_from_volts(float v)
+{
+    static const float tab[][2] = {
+        {4.15f, 100}, {4.05f, 90}, {3.95f, 78}, {3.85f, 62}, {3.78f, 50},
+        {3.72f, 38}, {3.66f, 25}, {3.58f, 12}, {3.45f, 4}, {3.30f, 0},
+    };
+    if (v >= tab[0][0]) return 100;
+    for (int i = 1; i < 10; i++)
+        if (v >= tab[i][0]) {
+            float t = (v - tab[i][0]) / (tab[i - 1][0] - tab[i][0]);
+            return (int)(tab[i][1] + t * (tab[i - 1][1] - tab[i][1]) + 0.5f);
+        }
+    return 0;
+}
+
+int battery_percent_pick(int gauge, float v, bool charging)
+{
+    if (v <= 0) return gauge;   // no reading: nothing better to offer
+    int est = battery_percent_from_volts(v);
+    if (gauge < 0 || gauge > 100) return est;
+    // while charging the voltage reads high (4.1-4.2 V even half full): only a gauge stuck at
+    // zero is replaced then
+    if (charging) return gauge <= 2 && est > 10 ? est : gauge;
+    return abs(gauge - est) > 35 ? est : gauge;
+}
+
 int shuffle_next(int cur, int count, uint32_t *seed)
 {
     if (count <= 1) return 0;

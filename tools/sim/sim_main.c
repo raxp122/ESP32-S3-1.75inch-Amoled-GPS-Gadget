@@ -124,6 +124,7 @@ int main(int argc, char **argv)
     g_set.dice_shake = 1;
     g_set.home_loop = 1;
     g_set.battery_mah = 500;
+    g_set.home_shortcut = HOME_SHORTCUT_DEFAULT;
     report = fopen("out/layout-report.md", "w");
     fprintf(report, "# Layout report\n\nText outside the round screen (466 px circle):\n\n");
 
@@ -172,6 +173,13 @@ int main(int argc, char **argv)
     shot("11_settings_screen");
     ev(EV_TAP, SCR_C, SCR_C);
     shot("12_settings_brightness_edit");
+    ev(EV_TAP, SCR_C, SCR_C);
+    for (int i = 0; i < 5; i++) ev(EV_DIAL_CW, 400, 200);   // Shortcut at the bottom (long name)
+    shot("12b_settings_long_name_dots");
+    run(2500);
+    shot("12c_settings_long_name_scrolling");
+    for (int i = 0; i < 5; i++) ev(EV_DIAL_CCW, 400, 200);
+    ev(EV_TAP, SCR_C, SCR_C);
     ev(EV_TAP, SCR_C, SCR_C);
     ev(EV_BOOT_CLICK, 0, 0);
     ev(EV_DIAL_CCW, 400, 200);

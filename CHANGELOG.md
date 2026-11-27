@@ -5,6 +5,20 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Battery: when the PMU fuel gauge is far from the voltage (a new battery it has not learned
+  yet showed 0 % at 4.09 V) the percentage comes from the voltage; warnings and the
+  low-battery power off use the corrected value.
+- Home: a fixed shortcut at 6 o'clock between the two horizon strokes, any app of the ring
+  (Settings by default, Settings › Screen › Shortcut at the bottom). The ring now fades out a
+  little earlier to leave it room.
+- Menus: a name too long for the circle scrolls after resting on it for 1.5 s.
+- Upload page: the name field is read-only until tapped (iOS kept opening the keyboard);
+  a new file clears the crop view first; videos are started right away so Safari loads them
+  (the previous GIF stayed on screen until play was pressed).
+
+## 0.1.15
+
+
 - Upload page: Delete asks for confirmation inside the page (tap twice); the browser's own
   dialogs never showed in the mini browser of the pendant's hotspot, so Delete did nothing.
 - Upload page: no focused field is left behind after the PIN (the keyboard kept opening);
