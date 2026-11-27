@@ -5,6 +5,8 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Home: the apps are in alphabetical order of their names in the current language (the home
+  still opens on Pendant); the shortcut setting goes through them in the same order.
 - Upload page: every JPEG (photos, GIF and video frames, previews) is made by a small baseline
   encoder in the page instead of the browser's: GIFs uploaded from an iPhone (Safari's encoder)
   showed blue bands on the pendant. Checked against a reference decoder and the pendant's

@@ -53,7 +53,8 @@ static void open_app(int a)
 {
     ev(EV_BOOT_LONG, 0, 0);   // home (from pendant mode: back to the menus first)
     ev(EV_BOOT_LONG, 0, 0);
-    while (home_sel != a) { ev(EV_DIAL_CW, 400, 200); home_sel = (home_sel + 1) % A_COUNT; }
+    int to = home_app_pos(a);   // the ring is alphabetical
+    while (home_sel != to) { ev(EV_DIAL_CW, 400, 200); home_sel = (home_sel + 1) % A_COUNT; }
     ev(EV_TAP, SCR_C, SCR_C);
 }
 
@@ -140,6 +141,7 @@ int main(int argc, char **argv)
     lv_display_set_buffers(d, calloc(SCR_W * SCR_H, 2), NULL, SCR_W * SCR_H * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
     lv_display_set_flush_cb(d, flush);
     ui_init();
+    home_sel = home_app_pos(A_PENDANT);   // the home starts on the pendant
 
     shot("01_home");
     sim_handler(EV_DIAL_CW, 400, 200);

@@ -116,7 +116,7 @@ from here*). Settings › Pendant:
 
 ### Launcher
 
-The apps sit on a ring along the edge, the selected one at 12 o'clock. At 6 o'clock two
+The apps sit on a ring along the edge, in alphabetical order, the selected one at 12 o'clock. At 6 o'clock two
 small strokes mark a horizon: apps sliding towards it fade out and new ones come in from the
 other side, so the list has room for any number of apps. Settings › Screen › **App list**:
 *Loops* (after the last app comes the first again) or *Stops at the ends* (at the first or last
