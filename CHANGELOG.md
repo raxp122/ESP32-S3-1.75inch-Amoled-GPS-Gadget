@@ -5,6 +5,10 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Calendar: the rings now turn with the bezel (later days, months and years sit
+  counter-clockwise, so turning clockwise brings them to the window); before they ran the
+  other way.
+
 - Settings › Pendant › Plays: *Single media* (BOOT for the next one) or *Slideshow* (every media
   in turn, after the interval; an animation always plays to the end of a loop first). Before,
   only the gallery could switch it (tap / double tap), so the interval seemed to do nothing.

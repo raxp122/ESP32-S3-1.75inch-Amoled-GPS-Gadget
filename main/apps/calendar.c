@@ -128,7 +128,9 @@ static void place_ring(int r)
             if (k > g->n / 2) k -= g->n;
             if (k < -g->n / 2) k += g->n;
         }
-        float a = -(float)M_PI / 2 + (k + g->ofs) * step;
+        // later values counter-clockwise: turning the bezel clockwise (forward) brings them to
+        // the window, so the ring turns with the finger
+        float a = -(float)M_PI / 2 - (k + g->ofs) * step;
         lv_obj_align(g->lbl[i], LV_ALIGN_CENTER, (int)lroundf(ring_r[r] * cosf(a)),
                      (int)lroundf(ring_r[r] * sinf(a)));
     }
