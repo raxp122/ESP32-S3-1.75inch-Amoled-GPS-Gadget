@@ -163,8 +163,54 @@ static void test_dice(void)
           dice_ability_mod(8) == -1 && dice_ability_mod(3) == -4 && dice_ability_mod(20) == 5);
 }
 
+static void test_daggerheart(void)
+{
+    dice_result_t r;
+    char b[32];
+    // hope 8, fear 3 (values % 12 + 1): with Hope
+    uint32_t v1[] = {7, 2};
+    seq_t a = {v1, 2, 0};
+    dice_spec_t s = {1, 20, 2, DICE_DH, 0};
+    CHECK(dice_is_dh(&s));
+    dice_roll(&s, seq_rng, &a, &r);
+    CHECK(r.hope == 8 && r.fear == 3 && r.dh == DH_HOPE && !r.crit && r.total == 13 && r.n == 2);
+    // fear wins
+    uint32_t v2[] = {0, 10};
+    seq_t b2 = {v2, 2, 0};
+    dice_roll(&s, seq_rng, &b2, &r);
+    CHECK(r.dh == DH_FEAR && r.total == 1 + 11 + 2);
+    // doubles: critical
+    uint32_t v3[] = {5, 5};
+    seq_t c = {v3, 2, 0};
+    dice_roll(&s, seq_rng, &c, &r);
+    CHECK(r.dh == DH_CRIT && r.crit && r.hope == 6 && r.fear == 6);
+    // advantage adds a d6, disadvantage takes it away
+    uint32_t v4[] = {7, 2, 3};   // 8, 3, d6 = 4
+    seq_t d = {v4, 3, 0};
+    s.mode = DICE_DH_ADV;
+    dice_roll(&s, seq_rng, &d, &r);
+    CHECK(r.d6 == 4 && r.n == 3 && r.total == 8 + 3 + 4 + 2);
+    d.i = 0;
+    s.mode = DICE_DH_DIS;
+    dice_roll(&s, seq_rng, &d, &r);
+    CHECK(r.total == 8 + 3 - 4 + 2 && r.dh == DH_HOPE);
+    dice_format(&s, b, sizeof(b));
+    CHECK(!strcmp(b, "2d12-d6+2"));
+    s.mode = DICE_DH;
+    s.mod = 0;
+    dice_format(&s, b, sizeof(b));
+    CHECK(!strcmp(b, "2d12"));
+    // a normal roll says "no Daggerheart"
+    s = (dice_spec_t){1, 20, 0, DICE_NORMAL, 0};
+    dice_roll(&s, seq_rng, &d, &r);
+    CHECK(r.dh == DH_NONE && !dice_is_dh(&s));
+    s.mode = 9;
+    CHECK(dice_clamp(s).mode == DICE_NORMAL);
+}
+
 int main(void)
 {
+    test_daggerheart();
     test_dice();
     test_kind();
     test_amj();

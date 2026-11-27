@@ -148,7 +148,7 @@ dice_spec_t dice_clamp(dice_spec_t s)
     if (s.sides > 100) s.sides = 100;
     if (s.mod < -99) s.mod = -99;
     if (s.mod > 99) s.mod = 99;
-    if (s.mode > DICE_DIS) s.mode = DICE_NORMAL;
+    if (s.mode >= DICE_MODES) s.mode = DICE_NORMAL;
     if (s.drop_lowest >= s.count) s.drop_lowest = 0;
     return s;
 }
@@ -162,10 +162,35 @@ int dice_one(int sides, dice_rng_t rng, void *ctx)
     return (int)(v % (uint32_t)sides) + 1;
 }
 
+bool dice_is_dh(const dice_spec_t *s) { return s->mode >= DICE_DH && s->mode < DICE_MODES; }
+
+// Daggerheart: Hope and Fear d12; the higher one names the outcome, doubles are a critical
+static void dh_roll(const dice_spec_t *s, dice_rng_t rng, void *ctx, dice_result_t *r)
+{
+    r->hope = (uint8_t)dice_one(12, rng, ctx);
+    r->fear = (uint8_t)dice_one(12, rng, ctx);
+    r->val[0] = r->hope;
+    r->val[1] = r->fear;
+    r->kept[0] = r->kept[1] = 1;
+    r->n = 2;
+    r->total = r->hope + r->fear + s->mod;
+    if (s->mode != DICE_DH) {
+        r->d6 = (uint8_t)dice_one(6, rng, ctx);
+        r->val[2] = r->d6;
+        r->kept[2] = 1;
+        r->n = 3;
+        r->total += s->mode == DICE_DH_ADV ? r->d6 : -r->d6;
+    }
+    r->dh = r->hope == r->fear ? DH_CRIT : r->hope > r->fear ? DH_HOPE : DH_FEAR;
+    r->crit = r->dh == DH_CRIT;
+}
+
 void dice_roll(const dice_spec_t *sp, dice_rng_t rng, void *ctx, dice_result_t *r)
 {
     dice_spec_t s = dice_clamp(*sp);
     memset(r, 0, sizeof(*r));
+    r->dh = DH_NONE;
+    if (dice_is_dh(&s)) { dh_roll(&s, rng, ctx, r); return; }
     bool pair = s.mode != DICE_NORMAL;
     for (int i = 0; i < s.count; i++) {
         int a = dice_one(s.sides, rng, ctx);
@@ -200,6 +225,11 @@ void dice_roll(const dice_spec_t *sp, dice_rng_t rng, void *ctx, dice_result_t *
 void dice_format(const dice_spec_t *sp, char *b, size_t n)
 {
     dice_spec_t s = dice_clamp(*sp);
+    if (dice_is_dh(&s)) {
+        int o = snprintf(b, n, "2d12%s", s.mode == DICE_DH_ADV ? "+d6" : s.mode == DICE_DH_DIS ? "-d6" : "");
+        if (s.mod && o >= 0 && (size_t)o < n) snprintf(b + o, n - o, "%+d", s.mod);
+        return;
+    }
     int o = s.count > 1 ? snprintf(b, n, "%dd%d", s.count, s.sides) : snprintf(b, n, "d%d", s.sides);
     if (s.drop_lowest && o >= 0 && (size_t)o < n) o += snprintf(b + o, n - o, "kh%d", s.count - s.drop_lowest);
     if (s.mod && o >= 0 && (size_t)o < n) snprintf(b + o, n - o, "%+d", s.mod);

@@ -139,6 +139,14 @@ typedef enum {
     S_BATT_CARE,
     S_POWER_SAVE,
     S_WIFI_SAVE,
+    S_DICE_DH,
+    S_DICE_DH_ADV,
+    S_DICE_DH_DIS,
+    S_DH_HOPE,
+    S_DH_FEAR,
+    S_DH_WITH_HOPE,
+    S_DH_WITH_FEAR,
+    S_DH_CRIT,
     S_COUNT
 } str_t;
 

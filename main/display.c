@@ -126,8 +126,12 @@ static void send_area_locked(const uint16_t *frame, int x1, int y1, int x2, int 
     int px1 = ax < bx ? ax : bx, px2 = ax < bx ? bx : ax;
     int py1 = ay < by ? ay : by, py2 = ay < by ? by : ay;
     int w = px2 - px1 + 1;
-    int rows = CHUNK_PX / w;
-    if (rows < 1) rows = 1;
+    // Every window must start on an even row (and end on an odd one), so the chunks are an even
+    // number of rows: with an odd count (an area 134 px wide gives 83 rows) the next window
+    // started on an odd row, the CO5300 moved it and two rows of the old picture stayed on
+    // screen (dotted lines through text that came and went).
+    int rows = (CHUNK_PX / w) & ~1;
+    if (rows < 2) rows = 2;
     for (int y = py1; y <= py2; y += rows) {
         int n = y + rows - 1 > py2 ? py2 - y + 1 : rows;
         uint16_t *d = dma_buf[dma_idx];
