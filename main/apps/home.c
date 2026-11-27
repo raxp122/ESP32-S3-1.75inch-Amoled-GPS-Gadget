@@ -7,6 +7,9 @@
 // At 6 o'clock, between the two strokes of the horizon, a fixed shortcut: one app chosen in
 // Settings > Screen > Shortcut (Settings by default). It stays in the ring too.
 //
+// The apps are in alphabetical order of their names in the current language; apps[] keeps its
+// own order because the shortcut setting stores an index into it.
+//
 // The ring follows the finger: sliding clockwise along the edge moves the icons clockwise.
 // No LVGL transforms (they force extra layers: slow, and they tear on this panel); the discs
 // change size directly.
@@ -16,6 +19,7 @@
 #include "settings.h"
 #include "wifi_mgr.h"
 #include "board.h"
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
@@ -44,12 +48,46 @@ static int sel;            // virtual index: in loop mode it can be any integer
 static float pos;          // animated position, same units
 static lv_obj_t *disc[POOL], *ico[POOL], *line_l, *line_r, *time_l, *name_l, *sub_l, *short_d, *short_i;
 
+static int order[N_APPS];  // ring position -> index in apps[] (alphabetical)
+static int order_lang = -1;
+
 static bool loop_mode(void) { return g_set.home_loop; }
+static int wrap(int v) { return ((v % N_APPS) + N_APPS) % N_APPS; }
+
+static int name_cmp(const char *a, const char *b)
+{
+    for (; *a && *b; a++, b++) {
+        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+        if (d) return d;
+    }
+    return (unsigned char)*a - (unsigned char)*b;
+}
+
+static void sort_apps(void)
+{
+    if (order_lang == g_set.lang) return;
+    order_lang = g_set.lang;
+    for (int i = 0; i < N_APPS; i++) order[i] = i;
+    for (int i = 1; i < N_APPS; i++)   // insertion sort: a handful of names
+        for (int j = i; j > 0 && name_cmp(T(apps[order[j]].name), T(apps[order[j - 1]].name)) < 0; j--) {
+            int t = order[j];
+            order[j] = order[j - 1];
+            order[j - 1] = t;
+        }
+}
 
 int home_app_count(void) { return N_APPS; }
-const char *home_app_name(int i) { return T(apps[((i % N_APPS) + N_APPS) % N_APPS].name); }
+const char *home_app_name(int i) { return T(apps[wrap(i)].name); }
+int home_app_at(int p) { sort_apps(); return order[wrap(p)]; }
+int home_app_pos(int app)
+{
+    sort_apps();
+    for (int p = 0; p < N_APPS; p++)
+        if (order[p] == app) return p;
+    return 0;
+}
 static int shortcut(void) { return g_set.home_shortcut < N_APPS ? g_set.home_shortcut : HOME_SHORTCUT_DEFAULT; }
-static int app_of(int v) { return ((v % N_APPS) + N_APPS) % N_APPS; }
+static int app_of(int v) { return order[wrap(v)]; }
 
 // half of the visible offsets: in loop mode an app never shows twice at the same time
 static float reach(void)
@@ -182,9 +220,12 @@ static lv_obj_t *tick_mark(lv_obj_t *root, float deg)
 
 static void enter(lv_obj_t *root, void *arg)
 {
-    if (!loop_mode()) {   // back from loop mode: a real index again
-        sel = app_of(sel);
-    }
+    // keep the selected app when the order changes (language): the first time, the pendant
+    static bool started;
+    int keep = started ? app_of(sel) : 0;
+    started = true;
+    sort_apps();
+    sel = home_app_pos(keep);
     pos = sel;
     line_l = tick_mark(root, 90 - 17);
     line_r = tick_mark(root, 90 + 17);

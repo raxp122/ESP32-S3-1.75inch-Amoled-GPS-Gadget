@@ -59,8 +59,8 @@ static void a_homeloop(int d) { g_set.home_loop = !g_set.home_loop; settings_mar
 static void v_shortcut(char *b, int n) { snprintf(b, n, "%s", home_app_name(g_set.home_shortcut)); }
 static void a_shortcut(int d)
 {
-    int n = home_app_count();
-    g_set.home_shortcut = (uint8_t)(((g_set.home_shortcut + d) % n + n) % n);
+    // through the apps in the order of the ring (alphabetical)
+    g_set.home_shortcut = (uint8_t)home_app_at(home_app_pos(g_set.home_shortcut) + d);
     settings_mark();
 }
 

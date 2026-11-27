@@ -181,7 +181,9 @@ void settings_open_battery(void);   // Settings › Battery, on the power-off th
 
 // the launcher's apps (for the shortcut setting)
 int  home_app_count(void);
-const char *home_app_name(int i);
+const char *home_app_name(int i);   // i: index in the app table (what the shortcut stores)
+int  home_app_at(int pos);           // the app at a position of the (alphabetical) ring
+int  home_app_pos(int app);
 #define HOME_SHORTCUT_DEFAULT 5   // Settings
 
 // pendant mode: start = index in the media list, slideshow or a single media

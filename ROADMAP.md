@@ -68,10 +68,3 @@ What AmuletOS may get next. Nothing here is promised; the order is decided one a
   bezel moves through the months.
 - **Bezel combination lock**: unlock the screen by turning the bezel like a safe dial.
 - **Sundial**: the shadow of a gnomon for the current time and place.
-
-## Known issues
-
-- Some GIFs show blue bands and blue tints after the upload (gallery and pendant); videos and
-  photos are fine. The page's GIF decoder matches a reference decoder exactly, and the pendant's
-  JPEG decoder (run in QEMU) decodes the same frames correctly when they are encoded by
-  Chromium. Next step: the files produced by Safari on the iPhone.

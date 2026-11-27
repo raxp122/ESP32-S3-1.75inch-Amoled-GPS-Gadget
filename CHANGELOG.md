@@ -5,6 +5,12 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Home: the apps are in alphabetical order of their names in the current language (the home
+  still opens on Pendant); the shortcut setting goes through them in the same order.
+- Upload page: every JPEG (photos, GIF and video frames, previews) is made by a small baseline
+  encoder in the page instead of the browser's: GIFs uploaded from an iPhone (Safari's encoder)
+  showed blue bands on the pendant. Checked against a reference decoder and the pendant's
+  decoder (esp_new_jpeg in QEMU).
 - Battery: a fuel gauge stuck near 0 % (not learned the battery yet) is always replaced by the
   voltage estimate, even on a half-empty cell.
 - Settings › Battery › Power off below: never, 3 % (default) up to 50 %. Under it, without a
