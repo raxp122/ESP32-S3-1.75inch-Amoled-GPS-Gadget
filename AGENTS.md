@@ -12,8 +12,10 @@ video caricati dal telefono.
 - `main/ui.*`, `main/menu.c`: pila di schermate, overlay (orologio, toast, anelli dei tasti tenuti),
   accensione/blocco schermo, menu tondo (`menu_item_t`, `MENU_SCREEN`).
 - `main/apps/`: una schermata per file (home, gallery, pendant = player, upload, clock, settings_app,
-  wifi, keyboard, ota_app, quick, info).
-- `main/core.*`: logica pura (formato AMJ, nomi file, versioni, fascia notte, query string), coperta
+  wifi, keyboard, ota_app, quick, info, dice, calendar). Le app nuove vanno in fondo all'elenco di
+  `home.c` (la scorciatoia salva l'indice).
+- `main/core.*`: logica pura (formato AMJ, nomi file, versioni, fascia notte, query string, dadi,
+  batteria, date e festività), coperta
   dai test in `tests/`. `main/media.*`: elenco media sulla SD e decodifica JPEG (`esp_new_jpeg`).
 - `main/web.*` + `main/www/*.html`: server e pagine servite dal ciondolo (caricamento con PIN,
   configurazione Wi-Fi). La conversione (ritaglio, GIF, video → AMJ) la fa il browser.

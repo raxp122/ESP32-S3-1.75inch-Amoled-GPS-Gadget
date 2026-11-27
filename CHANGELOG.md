@@ -5,6 +5,16 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Settings › Pendant › Plays: *Single media* (BOOT for the next one) or *Slideshow* (every media
+  in turn, after the interval; an animation always plays to the end of a loop first). Before,
+  only the gallery could switch it (tap / double tap), so the interval seemed to do nothing.
+- Calendar app: days, months and years on three concentric rings with a window at 12 o'clock,
+  the bezel turns the active ring (months and years follow), swipe changes it, tap on the date
+  opens the day page, long press goes back to today. Italian national holidays (Easter computed,
+  4 October from 2026) as non-working days, ISO week, day of the year, days from today.
+- A 17 px font for small labels; calendar icon.
+- `ROADMAP.md`: the apps decided, the ideas and the known issues.
+
 - Battery: a "~" before the percentage (clock, quick panel, Settings › Battery, Info) while it
   is estimated from the voltage because the fuel gauge has not learned the battery yet; the
   gauge takes over again once it is within 15 points of the voltage.

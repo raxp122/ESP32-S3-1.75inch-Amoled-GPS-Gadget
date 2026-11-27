@@ -7,6 +7,7 @@
 #include "i18n.h"
 
 /* ---- fonts (tools/gen_fonts.py): Poppins + Font Awesome icons ---- */
+extern const lv_font_t font_xs;     // 17 px, text only (small labels)
 extern const lv_font_t font_s;      // 22 px, text + icons
 extern const lv_font_t font_m;      // 30 px, text + icons
 extern const lv_font_t font_l;      // 44 px, text + icons
@@ -70,6 +71,7 @@ extern const lv_font_t font_icon;   // 64 px, icons only
 #define IC_SAVE       "\xEF\x83\x87"
 #define IC_PLUS       "\xEF\x81\xA7"
 #define IC_MINUS      "\xEF\x81\xA8"
+#define IC_CALENDAR   "\xEF\x81\xB3"
 
 /* ---- colours: pure black (AMOLED pixels off) + warm whites + one accent ---- */
 #define C_BG     lv_color_hex(0x000000)
@@ -173,7 +175,8 @@ extern const screen_t scr_menu;             // arg = menu_t*
 /* ---- the screens (apps/) ---- */
 extern const screen_t scr_home, scr_gallery, scr_pendant, scr_upload, scr_clock, scr_info,
                       scr_quick, scr_settings, scr_wifi, scr_wifi_scan, scr_wifi_portal, scr_ota,
-                      scr_keyboard, scr_dice, scr_dice_favs, scr_dice_hist, scr_dice_stats;
+                      scr_keyboard, scr_dice, scr_dice_favs, scr_dice_hist, scr_dice_stats,
+                      scr_calendar, scr_calendar_day;
 
 // the launcher's apps (for the shortcut setting)
 int  home_app_count(void);

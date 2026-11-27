@@ -149,6 +149,17 @@ typedef enum {
     S_DH_CRIT,
     S_HOME_SHORTCUT,
     S_CLOCK_ON,
+    S_APP_CALENDAR,
+    S_CAL_WORKDAY,
+    S_CAL_HOLIDAY,
+    S_CAL_TODAY,
+    S_CAL_TOMORROW,
+    S_CAL_YESTERDAY,
+    S_CAL_IN_DAYS,
+    S_CAL_DAYS_AGO,
+    S_CAL_NEXT,
+    S_CAL_WEEK,
+    S_PENDANT_MODE,
     S_COUNT
 } str_t;
 

@@ -147,6 +147,17 @@ static const char *const tab[S_COUNT][LANG_COUNT] = {
     [S_DH_CRIT] = {"CRITICO!", "CRITICAL!"},
     [S_HOME_SHORTCUT] = {"Scorciatoia in basso", "Shortcut at the bottom"},
     [S_CLOCK_ON] = {"Orologio sempre acceso", "Clock always on"},
+    [S_APP_CALENDAR] = {"Calendario", "Calendar"},
+    [S_CAL_WORKDAY] = {"Lavorativo", "Working day"},
+    [S_CAL_HOLIDAY] = {"Festivo", "Holiday"},
+    [S_CAL_TODAY] = {"oggi", "today"},
+    [S_CAL_TOMORROW] = {"domani", "tomorrow"},
+    [S_CAL_YESTERDAY] = {"ieri", "yesterday"},
+    [S_CAL_IN_DAYS] = {"tra %d giorni", "in %d days"},
+    [S_CAL_DAYS_AGO] = {"%d giorni fa", "%d days ago"},
+    [S_CAL_NEXT] = {"Prossimo festivo: %s, tra %d g", "Next holiday: %s, in %d d"},
+    [S_PENDANT_MODE] = {"Riproduzione", "Plays"},
+    [S_CAL_WEEK] = {"Settimana %d \xC2\xB7 giorno %d di %d", "Week %d \xC2\xB7 day %d of %d"},
 };
 
 const char *T(int id)

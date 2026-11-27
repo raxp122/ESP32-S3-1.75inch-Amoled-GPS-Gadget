@@ -237,8 +237,48 @@ static void test_battery(void)
     CHECK(battery_percent_pick(70, 0, false, &e) == 70 && !e);       // no voltage
 }
 
+#define D(y, m, d) ((date_t){y, m, d})
+static bool same(date_t a, date_t b) { return a.y == b.y && a.m == b.m && a.d == b.d; }
+
+static void test_calendar(void)
+{
+    CHECK(date_leap(2024) && !date_leap(2026) && !date_leap(1900) && date_leap(2000));
+    CHECK(date_days_in_month(2024, 2) == 29 && date_days_in_month(2026, 2) == 28);
+    CHECK(date_days_in_month(2026, 11) == 30 && date_days_in_month(2026, 12) == 31);
+    CHECK(date_to_days(D(1970, 1, 1)) == 0 && date_to_days(D(2000, 3, 1)) == 11017);
+    for (int32_t z = date_to_days(D(1900, 1, 1)); z < date_to_days(D(2200, 1, 1)); z += 37)
+        CHECK(date_to_days(date_from_days(z)) == z);
+    CHECK(date_weekday(D(2026, 11, 27)) == 4);   // Friday
+    CHECK(date_weekday(D(2026, 11, 1)) == 6);    // Sunday
+    CHECK(date_weekday(D(1970, 1, 1)) == 3);     // Thursday
+    CHECK(date_yday(D(2026, 11, 27)) == 331 && date_yday(D(2024, 12, 31)) == 366);
+    CHECK(date_iso_week(D(2026, 11, 27)) == 48);
+    CHECK(date_iso_week(D(2026, 1, 1)) == 1);     // Thursday: week 1
+    CHECK(date_iso_week(D(2027, 1, 1)) == 53);    // Friday: last week of 2026
+    CHECK(date_iso_week(D(2024, 12, 30)) == 1);   // Monday: week 1 of 2025
+    CHECK(same(date_add_days(D(2026, 11, 30), 1), D(2026, 12, 1)));
+    CHECK(same(date_add_days(D(2026, 12, 31), 1), D(2027, 1, 1)));
+    CHECK(same(date_add_days(D(2024, 3, 1), -1), D(2024, 2, 29)));
+    CHECK(same(date_add_months(D(2026, 1, 31), 1), D(2026, 2, 28)));
+    CHECK(same(date_add_months(D(2026, 12, 15), 1), D(2027, 1, 15)));
+    CHECK(same(date_add_months(D(2026, 1, 15), -1), D(2025, 12, 15)));
+    CHECK(same(date_add_years(D(2024, 2, 29), 1), D(2025, 2, 28)));
+    CHECK(same(date_add_years(D(2199, 6, 1), 5), D(2199, 12, 31)));   // clamped
+    CHECK(same(date_add_days(D(1900, 1, 1), -1), D(1900, 1, 1)));
+    CHECK(same(date_easter(2026), D(2026, 4, 5)) && same(date_easter(2025), D(2025, 4, 20)));
+    CHECK(same(date_easter(2024), D(2024, 3, 31)) && same(date_easter(2019), D(2019, 4, 21)));
+    CHECK(date_holiday_it(D(2026, 4, 6)) && date_holiday_it(D(2026, 4, 5)));   // Easter Monday
+    CHECK(date_holiday_it(D(2026, 6, 2)) && date_holiday_it(D(2026, 12, 26)));
+    CHECK(date_holiday_it(D(2026, 10, 4)) && !date_holiday_it(D(2025, 10, 4)));
+    CHECK(!date_holiday_it(D(2026, 11, 27)) && !date_holiday_it(D(2026, 11, 29)));   // a Sunday is not "holiday"
+    CHECK(same(date_next_holiday_it(D(2026, 11, 27)), D(2026, 12, 8)));
+    CHECK(same(date_next_holiday_it(D(2026, 12, 26)), D(2027, 1, 1)));
+    CHECK(same(date_next_holiday_it(D(2026, 3, 1)), D(2026, 4, 5)));
+}
+
 int main(void)
 {
+    test_calendar();
     test_battery();
     test_daggerheart();
     test_dice();

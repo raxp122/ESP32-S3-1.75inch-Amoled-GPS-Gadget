@@ -46,7 +46,7 @@ static void ev(ev_t e, int x, int y)
 }
 
 // home ring: the order of main/apps/home.c
-enum { A_PENDANT, A_GALLERY, A_UPLOAD, A_DICE, A_CLOCK, A_SETTINGS, A_INFO, A_COUNT };
+enum { A_PENDANT, A_GALLERY, A_UPLOAD, A_DICE, A_CLOCK, A_SETTINGS, A_INFO, A_CALENDAR, A_COUNT };
 static int home_sel;
 static void open_app(int a)
 {
@@ -270,6 +270,22 @@ int main(int argc, char **argv)
     ev(EV_TAP, SCR_C, SCR_C);
     run(900);
     shot("37_dice_d100");
+    ev(EV_BOOT_CLICK, 0, 0);
+
+    open_app(A_CALENDAR);
+    run(400);
+    shot("41_calendar");
+    for (int i = 0; i < 5; i++) ev(EV_DIAL_CW, 400, 200);   // across the end of the month
+    run(400);
+    shot("42_calendar_next_month");
+    ev(EV_SWIPE_LEFT, SCR_C, 200);                           // the bezel turns the months
+    ev(EV_DIAL_CW, 400, 200);
+    run(400);
+    shot("43_calendar_months");
+    ev(EV_TAP, SCR_C, SCR_C);                                // the day page
+    shot("44_calendar_day");
+    ev(EV_TAP, SCR_C, SCR_C);
+    ev(EV_LONG_PRESS, SCR_C, SCR_C);                         // back to today
     ev(EV_BOOT_CLICK, 0, 0);
 
     g_set.lang = LANG_EN;
