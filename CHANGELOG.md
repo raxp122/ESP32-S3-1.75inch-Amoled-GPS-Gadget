@@ -5,6 +5,17 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Battery: a "~" before the percentage (clock, quick panel, Settings › Battery, Info) while it
+  is estimated from the voltage because the fuel gauge has not learned the battery yet; the
+  gauge takes over again once it is within 15 points of the voltage.
+- Battery: a new battery is learned again by itself. Changing the capacity in Settings, or
+  plugging a battery in while on USB, restarts the PMU fuel gauge (the voltage is used until it
+  agrees again).
+- Clock: stays on (Settings › Screen › Clock always on, on by default). Untouched for the
+  auto-off time it dims to a third of the brightness (a sixth at night), the seconds ring stops
+  and the Wi-Fi sleeps; a touch or a button brings it back. A night window set to "screen off"
+  still turns it off. The text moves a few pixels every minute against burn-in.
+
 - Battery: when the PMU fuel gauge is far from the voltage (a new battery it has not learned
   yet showed 0 % at 4.09 V) the percentage comes from the voltage; warnings and the
   low-battery power off use the corrected value.

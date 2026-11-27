@@ -122,7 +122,8 @@ void ui_battery_icon(char *b, int n)
     int p = power_battery_percent();
     if (p < 0) { snprintf(b, n, IC_BOLT); return; }
     const char *ic = p > 85 ? IC_BAT_FULL : p > 60 ? IC_BAT_3 : p > 35 ? IC_BAT_2 : p > 12 ? IC_BAT_1 : IC_BAT_0;
-    snprintf(b, n, "%s%s %d%%", power_charging() ? IC_BOLT " " : "", ic, p);
+    // "~": estimated from the voltage, the fuel gauge has not learned the battery yet
+    snprintf(b, n, "%s%s %s%d%%", power_charging() ? IC_BOLT " " : "", ic, power_battery_estimated() ? "~" : "", p);
 }
 
 /* ---------------- overlays ---------------- */
@@ -398,6 +399,18 @@ static void on_event(ev_t e, int x, int y)
 static lv_timer_t *hold_timer;
 static int64_t off_since_us;
 
+bool ui_clock_keeps_on(void)
+{
+    // a night window set to "screen off" wins: the clock goes off like any other screen
+    return ui_current() == &scr_clock && g_set.clock_on && !(power_night() && g_set.night_mode == 1);
+}
+
+bool ui_clock_ambient(void)
+{
+    uint32_t limit = (g_set.sleep_s ? g_set.sleep_s : 30) * 1000u;
+    return !off && ui_clock_keeps_on() && input_idle_ms() > limit;
+}
+
 // Battery: how often the inputs are polled and whether the Wi-Fi may sleep
 static void power_policy(void)
 {
@@ -406,12 +419,13 @@ static void power_policy(void)
     int64_t now = esp_timer_get_time();
     if (!off) off_since_us = 0;
     else if (!off_since_us) off_since_us = now;
-    input_set_poll_ms(off ? 60 : (s && (s->flags & SCR_NO_TOUCH)) ? 30 : 12);
+    bool ambient = ui_clock_ambient();
+    input_set_poll_ms(off ? 60 : (ambient || (s && (s->flags & SCR_NO_TOUCH))) ? 30 : 12);
     lv_timer_set_period(hold_timer, off ? 120 : 40);
     // the home Wi-Fi is not needed while worn, nor with the screen off for a minute; the
     // pages that use it (upload, Wi-Fi, updates) have the screen on and bring it back
     bool idle_off = off && now - off_since_us > 60LL * 1000 * 1000;
-    wifi_mgr_set_suspend(g_set.wifi_save && (pendant || idle_off));
+    wifi_mgr_set_suspend(g_set.wifi_save && (pendant || idle_off || ambient));
 }
 
 static void tick_cb(lv_timer_t *t)
@@ -427,7 +441,8 @@ static void tick_cb(lv_timer_t *t)
     if (s && s->tick) s->tick();
     status_update();
     // menus: off after the idle time (pendant mode has its own rules)
-    if (!off && s && !(s->flags & SCR_NO_SLEEP) && g_set.sleep_s && input_idle_ms() > g_set.sleep_s * 1000u)
+    if (!off && s && !(s->flags & SCR_NO_SLEEP) && !ui_clock_keeps_on() && g_set.sleep_s &&
+        input_idle_ms() > g_set.sleep_s * 1000u)
         ui_screen_off(false);
 }
 

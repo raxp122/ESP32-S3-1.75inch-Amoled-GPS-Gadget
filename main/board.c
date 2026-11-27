@@ -196,6 +196,18 @@ float board_battery_volts(void)
     return (((r[0] & 0x3F) << 8) | r[1]) / 1000.0f;
 }
 
+bool board_battery_present(void) { return axp_get(0x00) & 0x08; }
+
+void board_gauge_reset(void)
+{
+    // switching the gauge off and on drops what it had learned about the old cell; it starts
+    // again from the open-circuit voltage
+    reg_write(dev_axp, 0x18, axp_get(0x18) & ~0x08);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    reg_write(dev_axp, 0x18, axp_get(0x18) | 0x08);
+    ESP_LOGI(TAG, "fuel gauge reset");
+}
+
 int board_battery_percent(void)
 {
     if (!(axp_get(0x00) & 0x08)) return -1;

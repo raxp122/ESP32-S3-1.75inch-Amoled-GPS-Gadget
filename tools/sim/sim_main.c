@@ -166,6 +166,12 @@ int main(int argc, char **argv)
     sim_wifi = WIFI_CONNECTED;
     open_app(A_CLOCK);
     shot("09_clock");
+    sim_battery = 0;   // a fuel gauge that has not learned the battery: "~" percentage
+    run(5500);
+    open_app(A_CLOCK);   // the face redraws once a second of real time: open it again
+    shot("09b_clock_battery_estimated");
+    sim_battery = 78;
+    run(5500);
     open_app(A_SETTINGS);
     shot("10_settings");
     ev(EV_DIAL_CW, 400, 200);

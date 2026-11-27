@@ -145,15 +145,24 @@ int battery_percent_from_volts(float v)
     return 0;
 }
 
-int battery_percent_pick(int gauge, float v, bool charging)
+int battery_percent_pick(int gauge, float v, bool charging, bool *estimated)
 {
-    if (v <= 0) return gauge;   // no reading: nothing better to offer
-    int est = battery_percent_from_volts(v);
-    if (gauge < 0 || gauge > 100) return est;
+    bool was = estimated && *estimated;
+    bool est_used;
+    int est = battery_percent_from_volts(v), r;
+    if (v <= 0) { r = gauge; est_used = false; }   // no reading: nothing better to offer
+    else if (gauge < 0 || gauge > 100) { r = est; est_used = true; }
     // while charging the voltage reads high (4.1-4.2 V even half full): only a gauge stuck at
     // zero is replaced then
-    if (charging) return gauge <= 2 && est > 10 ? est : gauge;
-    return abs(gauge - est) > 35 ? est : gauge;
+    else if (charging) { est_used = gauge <= 2 && est > 10; r = est_used ? est : gauge; }
+    else {
+        // hysteresis: the gauge takes over again only once it is close to the voltage estimate
+        int d = abs(gauge - est);
+        est_used = was ? d > 15 : d > 35;
+        r = est_used ? est : gauge;
+    }
+    if (estimated) *estimated = est_used;
+    return r;
 }
 
 int shuffle_next(int cur, int count, uint32_t *seed)

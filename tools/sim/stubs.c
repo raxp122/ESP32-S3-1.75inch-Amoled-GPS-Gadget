@@ -33,6 +33,8 @@ uint32_t esp_random(void) { static uint32_t x = 12345; x = x * 1664525u + 101390
 float board_battery_volts(void) { return 3.95f; }
 int board_battery_percent(void) { return sim_battery; }
 bool board_charging(void) { return sim_charging; }
+bool board_battery_present(void) { return sim_battery >= 0; }
+void board_gauge_reset(void) {}
 bool board_usb_power(void) { return sim_charging; }
 void board_power_off(void) {}
 bool board_imu_ok(void) { return true; }

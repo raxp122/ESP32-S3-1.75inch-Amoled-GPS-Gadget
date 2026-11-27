@@ -46,6 +46,8 @@ typedef struct {
     uint8_t  battery_care;      // charge to 4.1 V (~90 %) instead of 4.2 V
     // 0.1.16
     uint8_t  home_shortcut;     // app on the fixed button at the bottom of the home ring (home.c order)
+    // 0.1.21
+    uint8_t  clock_on;          // the clock app keeps the screen on (dimmed when not touched)
 } settings_t;
 
 extern settings_t g_set;

@@ -148,6 +148,7 @@ typedef enum {
     S_DH_WITH_FEAR,
     S_DH_CRIT,
     S_HOME_SHORTCUT,
+    S_CLOCK_ON,
     S_COUNT
 } str_t;
 

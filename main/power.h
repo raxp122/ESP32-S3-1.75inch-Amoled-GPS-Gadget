@@ -21,3 +21,8 @@ bool     power_time_valid(void);
 // battery state read every few seconds (the UI asks often, the PMU is on a shared I2C bus)
 int      power_battery_percent(void);   // -1 = no battery
 bool     power_charging(void);
+// the percentage comes from the voltage, not from the fuel gauge (not learned the battery yet)
+bool     power_battery_estimated(void);
+// a different battery: the fuel gauge starts over (a few seconds later, so the capacity dial
+// can be turned without a reset at every step); also done when the battery is plugged in again
+void     power_new_battery(void);

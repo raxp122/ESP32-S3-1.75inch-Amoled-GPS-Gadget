@@ -45,6 +45,8 @@ bool board_touch_recover(void);        // resets bus and touch controller after 
 void  board_power_off(void);           // AXP2101 cuts all rails (on USB the board may restart)
 float board_battery_volts(void);       // 0 when no battery
 int   board_battery_percent(void);     // fuel gauge of the AXP2101 (-1 if unknown)
+bool  board_battery_present(void);
+void  board_gauge_reset(void);          // the fuel gauge starts over from the voltage (new battery)
 bool  board_charging(void);
 bool  board_usb_power(void);           // VBUS present
 

@@ -49,7 +49,9 @@ bool query_param(const char *query, const char *key, char *out, size_t n);
 int  battery_percent_from_volts(float v);
 // The percentage to show: the PMU fuel gauge, unless it is missing (-1) or far from the voltage
 // estimate (a new battery the gauge has not learned yet, e.g. 0 % at 4.09 V): then the estimate.
-int  battery_percent_pick(int gauge, float volts, bool charging);
+// *estimated (in/out, may be NULL): in, whether the last pick was the estimate (the gauge must
+// then come within 15 points to take over again); out, whether this one is.
+int  battery_percent_pick(int gauge, float volts, bool charging, bool *estimated);
 // next index of a shuffled slideshow (never the current one when count > 1)
 int  shuffle_next(int cur, int count, uint32_t *seed);
 

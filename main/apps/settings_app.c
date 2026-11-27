@@ -64,6 +64,9 @@ static void a_shortcut(int d)
     settings_mark();
 }
 
+static void v_clockon(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.clock_on)); }
+static void s_clockon(void) { g_set.clock_on = !g_set.clock_on; settings_mark(); }
+
 static const menu_item_t screen_items[] = {
     {IC_SUN, S_BRIGHTNESS, NULL, v_bright, NULL, a_bright},
     {IC_ROTATE, S_ROTATION, NULL, v_rot, NULL, a_rot},
@@ -71,8 +74,9 @@ static const menu_item_t screen_items[] = {
     {IC_HOURGLASS, S_AUTO_OFF, NULL, v_sleep, NULL, a_sleep},
     {IC_HOME, S_HOME_LIST, NULL, v_homeloop, NULL, a_homeloop},
     {IC_STAR, S_HOME_SHORTCUT, NULL, v_shortcut, NULL, a_shortcut},
+    {IC_CLOCK, S_CLOCK_ON, NULL, v_clockon, s_clockon},
 };
-static menu_t screen_menu = {S_SET_SCREEN, screen_items, 6, 0};
+static menu_t screen_menu = {S_SET_SCREEN, screen_items, 7, 0};
 
 /* ---------------- Battery ---------------- */
 
@@ -82,6 +86,7 @@ static void a_mah(int d)
 {
     g_set.battery_mah = step_list(mah_vals, 12, g_set.battery_mah, d);
     board_battery_setup(g_set.battery_mah, g_set.battery_care);
+    power_new_battery();
     settings_mark();
 }
 static void v_care(char *b, int n) { snprintf(b, n, "%s", on_off(g_set.battery_care)); }

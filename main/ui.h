@@ -114,6 +114,10 @@ void ui_wake(void);
 bool ui_is_off(void);
 bool ui_is_locked(void);
 void ui_brightness_override(int pct); // -1 = menu brightness from the settings
+// the clock app keeps the screen on: true when it should not turn off now
+bool ui_clock_keeps_on(void);
+// ... and has not been touched for the auto-off time: dimmed, seconds stopped, Wi-Fi asleep
+bool ui_clock_ambient(void);
 void ui_apply_brightness(void);
 void ui_power_off(void);
 
