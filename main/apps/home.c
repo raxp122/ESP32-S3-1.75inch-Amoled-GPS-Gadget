@@ -34,6 +34,7 @@ static const app_t apps[] = {
     {IC_COG, S_APP_SETTINGS, &scr_settings},
     {IC_INFO, S_APP_INFO, &scr_info},
     {IC_CALENDAR, S_APP_CALENDAR, &scr_calendar},   // new apps at the end: the shortcut setting keeps its index
+    {IC_MAGIC, S_APP_TAROT, &scr_tarot},
 };
 #define N_APPS   (int)(sizeof(apps) / sizeof(apps[0]))
 #define RING_R   166

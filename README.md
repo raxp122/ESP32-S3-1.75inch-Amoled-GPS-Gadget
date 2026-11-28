@@ -135,6 +135,7 @@ any app, Settings by default (Settings › Screen › Shortcut at the bottom).
   zone, system.
 - **Info**: battery, power, microSD, network, firmware, memory.
 - **Calendar**: three concentric rings, see below.
+- **Tarot**: 78 round cards in a neon style, see below.
 
 ## Calendar
 
@@ -156,6 +157,35 @@ window at 12 o'clock and the date is in the middle. Offline, no account.
 - **Long press**: back to today. **BOOT** leaves.
 - Holidays are the Italian national non-working days (including Easter Monday and, from 2026,
   4 October), shown in the accent colour without names; Sundays are tinted.
+
+## Tarot
+
+<p>
+<img src="docs/img/tarot.png" width="180" alt="A tarot card">
+<img src="docs/img/tarot_spread.png" width="180" alt="Three-card spread">
+</p>
+
+The 22 major and 56 minor arcana, drawn for the round screen in a neon style (glowing lines on
+pure black: the AMOLED lights only the lines). The cards live on the microSD: the first time the
+app opens it offers to download them (about 3 MB, Wi-Fi needed).
+
+- **Tap or shake** the deck: draw one card, or three (past, present, future): **swipe up/down**
+  on the deck switches. Cards may come out reversed; **long press** on the deck turns that on/off.
+- **Tap a card**: its meaning (upright and reversed, the drawn side first). A reversed card is
+  shown upside down, with an upright *reversed* label. **Swipe right** or **long press**: back.
+- **Spread**: reversed cards are marked under their position; tap outside the cards for the
+  **reading**: past, present and future with each card, its orientation and the meaning of the
+  side that came out. **BOOT** leaves.
+- The names with a church background are secular here: II The Seer, V The Teacher, XV The
+  Chains, XX The Awakening.
+
+## App files on the microSD (asset packs)
+
+Images and texts of the apps are not in the firmware: each app has a pack (`tools/packs/<name>.py`
+draws it, `tools/packs/build.py` turns it into `<name>.amp`) attached to every release. The first
+time an app needs it, the pendant downloads it into `/amulet/apps/<name>/` and writes a
+`.version` file last; an app asks for the pack version it was written for, so a changed pack is
+downloaded again. Format: `main/core.h`.
 
 ## Dice
 
@@ -286,7 +316,7 @@ configuration) and Python with Pillow.
 | `main/wifi_mgr.*`, `main/ota.*` | Wi-Fi, hotspot with captive DNS, NTP; updates from GitHub |
 | `main/i18n.*` | texts in Italian and English |
 | `web/` | web installer (GitHub Pages) |
-| `tools/` | fonts, dependencies, simulator, mock device |
+| `tools/` | fonts, dependencies, simulator, mock device, asset packs (`tools/packs/`) |
 
 ## Roadmap
 

@@ -85,6 +85,38 @@ date_t  date_easter(int y);
 bool    date_holiday_it(date_t d);
 date_t  date_next_holiday_it(date_t d);       // the first one after d
 
+/* ---- asset packs ----
+ * The files of an app that live on the microSD (images, texts), built by the CI and attached to
+ * every release as <app>.amp; the pendant downloads one and unpacks it into /amulet/apps/<app>/.
+ *   "AMP1"
+ *   entries: u16 name length, name (relative path), u32 size, data      (little-endian)
+ *   end:     u16 0
+ * Names: [a-z0-9_.-] and "/" between parts, no "..", no leading "/" or ".", at most 63 chars. */
+#define PACK_NAME_MAX 63
+
+bool pack_name_ok(const char *name);
+
+typedef struct {
+    bool (*open)(void *ctx, const char *name, uint32_t size);   // a new file starts
+    bool (*write)(void *ctx, const uint8_t *data, size_t n);    // its bytes, in pieces
+    bool (*close)(void *ctx);                                   // it is complete
+} pack_cb_t;
+
+typedef struct {
+    int      st;                    // parser state
+    uint8_t  hdr[4];
+    int      hn;                    // bytes of hdr[] filled
+    char     name[PACK_NAME_MAX + 1];
+    uint16_t nlen;
+    uint32_t left;                  // bytes of the current file still to come
+    uint32_t files;                 // completed files
+    bool     done;                  // the end marker was read
+} pack_reader_t;
+
+void pack_reader_init(pack_reader_t *r);
+// feeds the next bytes of the pack (any split); false on a malformed pack or a callback failure
+bool pack_feed(pack_reader_t *r, const uint8_t *buf, size_t n, const pack_cb_t *cb, void *ctx);
+
 /* ---- dice ----
  * A roll: count dice with `sides` faces, plus a modifier. Advantage / disadvantage roll every
  * die twice and keep the higher / lower one (for 1d20 it is the D&D rule). drop_lowest drops

@@ -5,6 +5,15 @@ number of the published release (`0.1.<build>`).
 
 ## Next
 
+- Tarot app: 78 round cards in a neon style (22 major arcana drawn one by one, the minor arcana
+  with their suit signs), one card or a three-card spread, reversed cards, meanings in Italian
+  and English, shake to draw. Secular names for II, V, XV, XX. Orientation in the readings: a
+  reversed card is turned upside down with an upright "reversed" label, the spread marks its
+  reversed cards, and a reading page gives each position with its card, its orientation and the
+  meaning of the side that came out.
+- Asset packs: app files (images, texts) are downloaded onto the microSD from the release the
+  first time an app needs them (`main/packs.*`, format and reader in `core.*` with tests,
+  generators in `tools/packs/`, the CI attaches `*.amp` to every release).
 - Home: the apps are in alphabetical order of their names in the current language (the home
   still opens on Pendant); the shortcut setting goes through them in the same order.
 - Upload page: every JPEG (photos, GIF and video frames, previews) is made by a small baseline
