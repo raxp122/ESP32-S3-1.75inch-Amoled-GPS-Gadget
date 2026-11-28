@@ -307,8 +307,85 @@ static void test_media_filter(void)
     CHECK(media_pick_next(one, 2, 1, MEDIA_FILTER_ANIM, true, &seed) == 1);   // the only one
 }
 
+/* pack reader: collects what the callbacks get */
+typedef struct { char names[8][64]; uint32_t sizes[8]; uint8_t data[8][64]; uint32_t got[8]; int n, closed; bool fail_open; } pk_t;
+static bool pk_open(void *c, const char *name, uint32_t size)
+{
+    pk_t *p = c;
+    if (p->fail_open || p->n >= 8) return false;
+    snprintf(p->names[p->n], 64, "%s", name);
+    p->sizes[p->n] = size;
+    p->got[p->n] = 0;
+    p->n++;
+    return true;
+}
+static bool pk_write(void *c, const uint8_t *d, size_t n)
+{
+    pk_t *p = c;
+    int k = p->n - 1;
+    for (size_t i = 0; i < n && p->got[k] < 64; i++) p->data[k][p->got[k]++] = d[i];
+    return true;
+}
+static bool pk_close(void *c) { ((pk_t *)c)->closed++; return true; }
+static const pack_cb_t PK = {pk_open, pk_write, pk_close};
+
+static size_t pk_put(uint8_t *b, const char *name, const char *data)
+{
+    size_t o = 0, nl = strlen(name), dl = strlen(data);
+    b[o++] = nl & 255; b[o++] = nl >> 8;
+    memcpy(b + o, name, nl); o += nl;
+    b[o++] = dl & 255; b[o++] = (dl >> 8) & 255; b[o++] = 0; b[o++] = 0;
+    memcpy(b + o, data, dl); o += dl;
+    return o;
+}
+
+static void test_pack(void)
+{
+    CHECK(pack_name_ok("cards/00.jpg") && pack_name_ok("cards.txt") && pack_name_ok("thumbs/a-b_c.jpg"));
+    CHECK(!pack_name_ok("") && !pack_name_ok("/abs") && !pack_name_ok("../x") && !pack_name_ok("a/../b"));
+    CHECK(!pack_name_ok(".hidden") && !pack_name_ok("a//b") && !pack_name_ok("dir/") && !pack_name_ok("A.jpg"));
+    CHECK(!pack_name_ok("a b") && !pack_name_ok("a\\b"));
+    uint8_t b[256];
+    size_t o = 0;
+    memcpy(b, "AMP1", 4); o = 4;
+    o += pk_put(b + o, "cards.txt", "hello");
+    o += pk_put(b + o, "cards/00.jpg", "");
+    o += pk_put(b + o, "back.jpg", "0123456789");
+    b[o++] = 0; b[o++] = 0;
+    for (size_t step = 1; step <= o; step++) {   // any split of the stream gives the same files
+        pk_t p = {0};
+        pack_reader_t r;
+        pack_reader_init(&r);
+        bool ok = true;
+        for (size_t i = 0; i < o && ok; i += step) ok = pack_feed(&r, b + i, i + step <= o ? step : o - i, &PK, &p);
+        CHECK(ok && r.done && r.files == 3 && p.n == 3 && p.closed == 3);
+        CHECK(!strcmp(p.names[0], "cards.txt") && p.got[0] == 5 && !memcmp(p.data[0], "hello", 5));
+        CHECK(!strcmp(p.names[1], "cards/00.jpg") && p.sizes[1] == 0);
+        CHECK(p.got[2] == 10 && !memcmp(p.data[2], "0123456789", 10));
+    }
+    {   // not a pack
+        pk_t p = {0}; pack_reader_t r; pack_reader_init(&r);
+        CHECK(!pack_feed(&r, (const uint8_t *)"PK\3\4xxxx", 8, &PK, &p));
+    }
+    {   // a bad name stops it before any file is opened
+        uint8_t c[64]; size_t k = 4; memcpy(c, "AMP1", 4);
+        k += pk_put(c + k, "../evil", "x");
+        pk_t p = {0}; pack_reader_t r; pack_reader_init(&r);
+        CHECK(!pack_feed(&r, c, k, &PK, &p) && p.n == 0);
+    }
+    {   // a callback failure stops it
+        pk_t p = {0}; p.fail_open = true; pack_reader_t r; pack_reader_init(&r);
+        CHECK(!pack_feed(&r, b, o, &PK, &p));
+    }
+    {   // truncated: no error, but not done
+        pk_t p = {0}; pack_reader_t r; pack_reader_init(&r);
+        CHECK(pack_feed(&r, b, o - 5, &PK, &p) && !r.done);
+    }
+}
+
 int main(void)
 {
+    test_pack();
     test_media_filter();
     test_calendar();
     test_battery();

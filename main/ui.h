@@ -176,7 +176,8 @@ extern const screen_t scr_menu;             // arg = menu_t*
 extern const screen_t scr_home, scr_gallery, scr_pendant, scr_upload, scr_clock, scr_info,
                       scr_quick, scr_settings, scr_wifi, scr_wifi_scan, scr_wifi_portal, scr_ota,
                       scr_keyboard, scr_dice, scr_dice_favs, scr_dice_hist, scr_dice_stats,
-                      scr_calendar, scr_calendar_day, scr_battery_off;
+                      scr_calendar, scr_calendar_day, scr_battery_off,
+                      scr_tarot, scr_tarot_meaning;
 void settings_open_battery(void);   // Settings › Battery, on the power-off threshold
 
 // the launcher's apps (for the shortcut setting)

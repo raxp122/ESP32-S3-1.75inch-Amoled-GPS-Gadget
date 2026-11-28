@@ -193,3 +193,36 @@ static bool p_event(ev_t e, int x, int y) { if (e == EV_BOOT_LONG) { ui_pop(); }
 const screen_t scr_pendant = {"pendant", p_enter, NULL, p_event, NULL, SCR_NO_STATUS | SCR_NO_SLEEP | SCR_NO_TOUCH | SCR_NO_PULL};
 void pendant_start(int index, bool slideshow) { static pendant_arg_t a; a.start = index; a.slideshow = slideshow; ui_push(&scr_pendant, &a); }
 void pendant_resume(void) { pendant_start(0, true); }
+
+/* ---- files and asset packs: run.sh puts the tarot pack in obj/packs, its JPEGs turned into
+   "RAW5" files (u16 w, u16 h, RGB565) because the simulator has no JPEG decoder ---- */
+#include "packs.h"
+bool sim_packs;
+static pack_job_t sim_job;
+uint8_t *media_read_file(const char *path, int *len, int max_len)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END);
+    long n = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    uint8_t *b = n > 0 && n <= max_len ? malloc(n) : NULL;
+    if (b && fread(b, 1, n, f) != (size_t)n) { free(b); b = NULL; }
+    fclose(f);
+    if (b) *len = (int)n;
+    return b;
+}
+bool media_decode(const uint8_t *j, int len, uint16_t *out, int w, int h)
+{
+    if (len < 8 || memcmp(j, "RAW5", 4)) return false;
+    int iw = j[4] | j[5] << 8, ih = j[6] | j[7] << 8;
+    if (iw != w || ih != h || len < 8 + w * h * 2) return false;
+    memcpy(out, j + 8, (size_t)w * h * 2);
+    return true;
+}
+void packs_path(const char *name, const char *file, char *out, int n) { snprintf(out, n, "obj/packs/%s/%s", name, file); }
+bool packs_ready(const char *name, const char *version) { return sim_packs; }
+void packs_install(const char *name, const char *version) { sim_job = PACKJ_RUNNING; }
+pack_job_t packs_job(void) { return sim_job; }
+int packs_progress(void) { return 42; }
+const char *packs_error(void) { return ""; }

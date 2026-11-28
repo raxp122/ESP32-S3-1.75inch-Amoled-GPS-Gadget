@@ -217,6 +217,85 @@ int media_pick_next(const uint8_t *kinds, int n, int cur, int filter, bool shuff
     return -1;
 }
 
+/* ---------------- asset packs ---------------- */
+
+bool pack_name_ok(const char *n)
+{
+    size_t len = n ? strlen(n) : 0;
+    if (!len || len > PACK_NAME_MAX || n[0] == '/' || n[0] == '.' || n[len - 1] == '/') return false;
+    for (size_t i = 0; i < len; i++) {
+        char c = n[i];
+        bool ok = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '.' || c == '/';
+        if (!ok) return false;
+        if (c == '/' && (n[i + 1] == '/' || n[i + 1] == '.')) return false;   // no "//", no hidden or ".." parts
+    }
+    return true;
+}
+
+enum { PK_MAGIC, PK_NLEN, PK_NAME, PK_SIZE, PK_DATA, PK_END, PK_BAD };
+
+void pack_reader_init(pack_reader_t *r) { memset(r, 0, sizeof(*r)); r->st = PK_MAGIC; }
+
+bool pack_feed(pack_reader_t *r, const uint8_t *b, size_t n, const pack_cb_t *cb, void *ctx)
+{
+    size_t i = 0;
+    while (i < n) {
+        switch (r->st) {
+        case PK_MAGIC:
+            r->hdr[r->hn++] = b[i++];
+            if (r->hn == 4) {
+                if (memcmp(r->hdr, "AMP1", 4)) { r->st = PK_BAD; return false; }
+                r->hn = 0; r->st = PK_NLEN;
+            }
+            break;
+        case PK_NLEN:
+            r->hdr[r->hn++] = b[i++];
+            if (r->hn == 2) {
+                r->nlen = rd16(r->hdr);
+                r->hn = 0;
+                if (r->nlen == 0) { r->st = PK_END; r->done = true; break; }
+                if (r->nlen > PACK_NAME_MAX) { r->st = PK_BAD; return false; }
+                r->st = PK_NAME;
+            }
+            break;
+        case PK_NAME:
+            r->name[r->hn++] = (char)b[i++];
+            if (r->hn == r->nlen) {
+                r->name[r->hn] = 0;
+                r->hn = 0;
+                if (!pack_name_ok(r->name)) { r->st = PK_BAD; return false; }
+                r->st = PK_SIZE;
+            }
+            break;
+        case PK_SIZE:
+            r->hdr[r->hn++] = b[i++];
+            if (r->hn == 4) {
+                r->left = rd32(r->hdr);
+                r->hn = 0;
+                if (!cb->open(ctx, r->name, r->left)) { r->st = PK_BAD; return false; }
+                r->st = PK_DATA;
+                if (!r->left) { if (!cb->close(ctx)) { r->st = PK_BAD; return false; } r->files++; r->st = PK_NLEN; }
+            }
+            break;
+        case PK_DATA: {
+            size_t k = n - i < r->left ? n - i : r->left;
+            if (!cb->write(ctx, b + i, k)) { r->st = PK_BAD; return false; }
+            i += k;
+            r->left -= (uint32_t)k;
+            if (!r->left) {
+                if (!cb->close(ctx)) { r->st = PK_BAD; return false; }
+                r->files++;
+                r->st = PK_NLEN;
+            }
+            break;
+        }
+        case PK_END: return false;   // bytes after the end marker
+        default: return false;
+        }
+    }
+    return true;
+}
+
 /* ---------------- dice ---------------- */
 
 dice_spec_t dice_clamp(dice_spec_t s)

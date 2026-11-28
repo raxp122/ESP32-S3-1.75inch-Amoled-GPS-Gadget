@@ -48,6 +48,7 @@ static void defaults(settings_t *s)
     s->disp_int_img_s = 60;
     s->disp_int_anim_s = 20;
     s->battery_off_pct = 3;
+    s->tarot_reversed = 1;
 }
 
 void settings_load(void)

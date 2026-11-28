@@ -12,6 +12,7 @@
 
 extern int64_t sim_now_us;
 extern float sim_volts;
+extern bool sim_packs;
 extern int sim_battery, sim_charging, sim_boot_held, sim_pwr_held, sim_media, sim_ota_progress;
 extern bool sim_sd;
 extern wifi_state_t sim_wifi;
@@ -47,7 +48,7 @@ static void ev(ev_t e, int x, int y)
 }
 
 // home ring: the order of main/apps/home.c
-enum { A_PENDANT, A_GALLERY, A_UPLOAD, A_DICE, A_CLOCK, A_SETTINGS, A_INFO, A_CALENDAR, A_COUNT };
+enum { A_PENDANT, A_GALLERY, A_UPLOAD, A_DICE, A_CLOCK, A_SETTINGS, A_INFO, A_CALENDAR, A_TAROT, A_COUNT };
 static int home_sel;
 static void open_app(int a)
 {
@@ -293,6 +294,27 @@ int main(int argc, char **argv)
     ev(EV_TAP, SCR_C, SCR_C);
     ev(EV_LONG_PRESS, SCR_C, SCR_C);                         // back to today
     ev(EV_BOOT_CLICK, 0, 0);
+
+    // tarot: the pack to download, then the deck, a card, its meaning, a spread of three
+    open_app(A_TAROT);
+    shot("46_tarot_download");
+    sim_packs = true;
+    ev(EV_BOOT_CLICK, 0, 0);
+    open_app(A_TAROT);
+    shot("47_tarot_deck");
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(400);
+    shot("48_tarot_card");
+    ev(EV_TAP, SCR_C, SCR_C);
+    shot("49_tarot_meaning");
+    ev(EV_TAP, SCR_C, SCR_C);
+    ev(EV_LONG_PRESS, SCR_C, SCR_C);   // back to the deck
+    ev(EV_SWIPE_UP, SCR_C, 300);       // three cards
+    ev(EV_TAP, SCR_C, SCR_C);
+    run(400);
+    shot("50_tarot_spread");
+    ev(EV_BOOT_CLICK, 0, 0);
+    g_set.tarot_three = 0;
 
     // battery under the power-off threshold: the 30 s warning
     g_set.battery_off_pct = 20;

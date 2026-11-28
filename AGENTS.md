@@ -25,6 +25,10 @@ video caricati dal telefono.
   scrive in `tools/sim/out/` le schermate e `layout-report.md` (testi fuori dal cerchio). Le modifiche
   all'interfaccia si controllano qui prima dell'hardware; le nuove schermate vanno aggiunte alle scene.
 - `tools/mock_device.py`: la pagina di caricamento sul PC con la stessa API (PIN 1234).
+- `main/packs.*` + `tools/packs/`: i file delle app che stanno sulla microSD (immagini, testi) sono
+  "pacchetti" (`<nome>.amp`, formato in `core.h`) generati dalla CI e allegati alla release; il
+  ciondolo li scarica in `/amulet/apps/<nome>/` la prima volta. Grafica e testi nuovi delle app
+  vanno lì, non nel firmware. Se cambia un pacchetto si alza la sua versione nell'app.
 - `.github/workflows/build.yml`: test + build a ogni push; su `main` release (`amulet.bin`,
   `amulet-app.bin`, `version.json`) e installer web su GitHub Pages.
 

@@ -1,7 +1,8 @@
 name: Build
 
 # Builds the firmware on every push and pull request. A push to main also publishes:
-#   - a GitHub release (version.json + amulet-app.bin): the pendant updates itself from it (OTA)
+#   - a GitHub release (version.json + amulet-app.bin): the pendant updates itself from it (OTA),
+#     plus the asset packs of the apps (*.amp) the pendant downloads onto the microSD
 #   - the web installer on GitHub Pages (first flash over USB from the browser)
 on:
   push:
@@ -31,6 +32,11 @@ jobs:
 
       - name: Native tests
         run: make -C tests CC=gcc
+
+      - name: Asset packs (files of the apps for the microSD)
+        run: |
+          pip install --quiet pillow
+          python3 tools/packs/build.py packs
 
       - name: Components (LVGL, esp_new_jpeg)
         run: sh tools/fetch_deps.sh
@@ -64,6 +70,7 @@ jobs:
             amulet.bin
             amulet-app.bin
             version.json
+            packs/*.amp
 
       - name: Publish the release (main only)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -79,12 +86,14 @@ jobs:
             - **On the pendant (OTA):** Settings › Updates › Firmware.
             - **USB, first install:** the web installer (GitHub Pages of this repository), or `amulet.bin` at `0x0`.
             - **USB, app only:** `amulet-app.bin` at `0x20000`.
+            - **App files** (`*.amp`): the pendant downloads them by itself onto the microSD the first time an app needs them.
 
             Settings live at the end of the flash and media on the microSD: none of these files erase them.
           files: |
             amulet.bin
             amulet-app.bin
             version.json
+            packs/*.amp
 
       - name: Web installer site
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

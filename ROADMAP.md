@@ -11,13 +11,11 @@ What AmuletOS may get next. Nothing here is promised; the order is decided one a
   when the days pass the end of a month the months ring clicks on too (and the years ring at
   the end of the year). A swipe changes the active ring: days, months, years, days again. The
   date is in the middle; a tap opens the day page. Mockups in `docs/mockups/calendar_4*.png`.
+- **Tarot**: 78 neon cards on the microSD (asset pack), one card or three, meanings. Ideas for
+  later: other oracles (I Ching, runes, Lenormand), a card of the day.
 
 ## Decided
 
-- **Tarot**: major and minor arcana, round cards drawn for the pendant in the **neon** style
-  (glowing lines on pure black, synthwave sun and grids, magenta rim, cyan numeral, magenta
-  name; mockups in `docs/mockups/tarot_neon_*.png`, other styles tried in `tarot_style_*.png`). Shake or tap to draw; single card or small spreads; the meaning on a second page.
-  Other oracles (I Ching, runes, Lenormand) could share the app.
 - **Timers**: timer, stopwatch, pomodoro and alarms. To decide: a separate app or pages of the
   Clock app.
 - **Step counter**: steps of the day from the accelerometer, kept quiet (no badges, no streaks).

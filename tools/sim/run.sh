@@ -18,9 +18,25 @@ if [ ! -f obj/liblvgl.a ]; then
     wait
     ar rcs obj/liblvgl.a obj/*.o
 fi
-APPS="dice home gallery upload clock info quick settings_app keyboard wifi ota_app calendar battery_off"
+APPS="dice home gallery upload clock info quick settings_app keyboard wifi ota_app calendar battery_off tarot"
 SRC="$M/ui.c $M/menu.c $M/i18n.c $M/core.c $M/power.c $M/fonts/*.c"
 for a in $APPS; do SRC="$SRC $M/apps/$a.c"; done
+# the tarot pack, drawn once, with its JPEGs turned into raw RGB565 for the stubs
+if [ ! -f obj/packs/tarot/cards.txt ]; then
+    python3 ../packs/tarot.py obj/packs/tarot > /dev/null
+    python3 - <<'PY'
+from PIL import Image
+import glob, struct
+for f in glob.glob('obj/packs/tarot/**/*.jpg', recursive=True):
+    im = Image.open(f).convert('RGB')
+    w, h = im.size
+    px = bytearray(b'RAW5' + struct.pack('<HH', w, h))
+    for r, g, b in im.getdata():
+        v = (r >> 3) << 11 | (g >> 2) << 5 | (b >> 3)
+        px += struct.pack('<H', v)
+    open(f, 'wb').write(px)
+PY
+fi
 gcc $CFLAGS -I$M -I$M/apps $SRC stubs.c sim_main.c obj/liblvgl.a -lm -o obj/sim
 rm -f out/*.ppm out/*.png
 ./obj/sim
