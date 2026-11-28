@@ -313,6 +313,9 @@ int main(int argc, char **argv)
     ev(EV_TAP, SCR_C, SCR_C);
     run(400);
     shot("50_tarot_spread");
+    ev(EV_TAP, SCR_C, 400);           // outside the cards: the reading
+    shot("51_tarot_reading");
+    ev(EV_TAP, SCR_C, SCR_C);
     ev(EV_BOOT_CLICK, 0, 0);
     g_set.tarot_three = 0;
 

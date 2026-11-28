@@ -171,8 +171,11 @@ app opens it offers to download them (about 3 MB, Wi-Fi needed).
 
 - **Tap or shake** the deck: draw one card, or three (past, present, future): **swipe up/down**
   on the deck switches. Cards may come out reversed; **long press** on the deck turns that on/off.
-- **Tap a card**: its meaning (upright and reversed, the drawn side first). **Swipe right** or
-  **long press**: back. **BOOT** leaves.
+- **Tap a card**: its meaning (upright and reversed, the drawn side first). A reversed card is
+  shown upside down, with an upright *reversed* label. **Swipe right** or **long press**: back.
+- **Spread**: reversed cards are marked under their position; tap outside the cards for the
+  **reading**: past, present and future with each card, its orientation and the meaning of the
+  side that came out. **BOOT** leaves.
 - The names with a church background are secular here: II The Seer, V The Teacher, XV The
   Chains, XX The Awakening.
 

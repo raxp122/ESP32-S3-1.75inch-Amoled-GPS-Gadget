@@ -188,6 +188,8 @@ typedef enum {
     S_TAROT_REV_ON,
     S_TAROT_REV_OFF,
     S_TAROT_BROKEN,
+    S_TAROT_REV_SHORT,
+    S_TAROT_READ_HINT,
     S_COUNT
 } str_t;
 

@@ -4,7 +4,8 @@
 // Deck: the back of the cards. Tap or shake: draw (one card, or three for past / present /
 // future: swipe up / down switches). A card may come out reversed (long press on the deck
 // turns reversed cards on / off). On a card: tap for its meaning; swipe right or long press
-// goes back. In the spread: tap a card to see it. BOOT leaves.
+// goes back. In the spread: tap a card to see it, tap elsewhere for the reading (each position
+// with its card, upright or reversed, and the meaning of the side that came out). BOOT leaves.
 #include "ui.h"
 #include "board.h"
 #include "core.h"
@@ -39,7 +40,7 @@ static bool text_ok;
 
 static uint16_t *full, *thumb[3];          // never freed: the images point at them
 static lv_image_dsc_t full_dsc, thumb_dsc[3];
-static lv_obj_t *img, *thumb_img[3], *thumb_lbl[3], *top_l, *hint_l, *dl_icon, *dl_title, *dl_text;
+static lv_obj_t *img, *thumb_img[3], *thumb_lbl[3], *thumb_rev[3], *top_l, *hint_l, *dl_icon, *dl_title, *dl_text;
 static lv_timer_t *shake_t;
 static state_t st;
 static drawn_t drawn[3];
@@ -142,19 +143,22 @@ static void show(state_t s)
     for (int k = 0; k < 3; k++) {
         lv_obj_update_flag(thumb_img[k], LV_OBJ_FLAG_HIDDEN, s != ST_SPREAD);
         lv_obj_update_flag(thumb_lbl[k], LV_OBJ_FLAG_HIDDEN, s != ST_SPREAD);
+        lv_obj_update_flag(thumb_rev[k], LV_OBJ_FLAG_HIDDEN, !(s == ST_SPREAD && drawn[k].rev));
     }
+    // a reversed card is upside down: an upright word says so
+    bool rev_card = s == ST_CARD && shown >= 0 && drawn[shown].rev;
     lv_obj_update_flag(top_l, LV_OBJ_FLAG_HIDDEN, s != ST_DECK);
-    lv_obj_update_flag(hint_l, LV_OBJ_FLAG_HIDDEN, !(s == ST_DECK || s == ST_SPREAD));
+    lv_obj_update_flag(hint_l, LV_OBJ_FLAG_HIDDEN, !(s == ST_DECK || s == ST_SPREAD || rev_card));
+    lv_obj_set_style_text_color(hint_l, rev_card ? ui_accent() : C_TEXT, 0);
     if (s == ST_DECK) {
         ui_set_text(top_l, T(g_set.tarot_three ? S_TAROT_THREE : S_TAROT_ONE));
         ui_set_text(hint_l, T(S_TAROT_HINT));
-        lv_obj_align(hint_l, LV_ALIGN_CENTER, 0, 150);
     } else if (s == ST_SPREAD) {
-        char b[160];
-        snprintf(b, sizeof(b), "%s  \xC2\xB7  %s  \xC2\xB7  %s", card_name(drawn[0].card), card_name(drawn[1].card), card_name(drawn[2].card));
-        ui_set_text(hint_l, b);
-        lv_obj_align(hint_l, LV_ALIGN_CENTER, 0, 128);
+        ui_set_text(hint_l, T(S_TAROT_READ_HINT));
+    } else if (rev_card) {
+        ui_set_text(hint_l, T(S_TAROT_REVERSED));
     }
+    lv_obj_align(hint_l, LV_ALIGN_CENTER, 0, 150);
 }
 
 static void show_back(void)
@@ -246,6 +250,8 @@ static void enter(lv_obj_t *root, void *arg)
         lv_obj_set_pos(thumb_img[k], spread_xy[k][0] - THUMB / 2, spread_xy[k][1] - THUMB / 2);
         thumb_lbl[k] = ui_label(root, &font_xs, C_DIM, T(spread_lbl[k]));
         lv_obj_align(thumb_lbl[k], LV_ALIGN_TOP_MID, spread_xy[k][0] - SCR_C, spread_xy[k][1] + THUMB / 2 + 6);
+        thumb_rev[k] = ui_label(root, &font_xs, ui_accent(), T(S_TAROT_REV_SHORT));
+        lv_obj_align(thumb_rev[k], LV_ALIGN_TOP_MID, spread_xy[k][0] - SCR_C, spread_xy[k][1] + THUMB / 2 + 26);
     }
     top_l = ui_label(root, &font_xs, C_TEXT, "");
     lv_obj_align(top_l, LV_ALIGN_CENTER, 0, -150);
@@ -271,6 +277,11 @@ static void enter(lv_obj_t *root, void *arg)
     shake_t = lv_timer_create(shake_cb, 40, NULL);
 
     if (!ready()) { update_download(); show(ST_DOWNLOAD); return; }
+    if (keep && st == ST_SPREAD) {   // back from the reading: the previews are still there
+        keep = false;
+        show(ST_SPREAD);
+        return;
+    }
     if (keep && st == ST_CARD && shown >= 0) {   // back from the meaning page
         keep = false;
         int k = shown;
@@ -335,6 +346,8 @@ static bool event(ev_t e, int x, int y)
                 int dx = x - spread_xy[k][0], dy = y - spread_xy[k][1];
                 if (dx * dx + dy * dy <= (THUMB / 2 + 12) * (THUMB / 2 + 12)) { from_spread = true; show_card(k); return true; }
             }
+            keep = true;
+            ui_push(&scr_tarot_reading, drawn);
             return true;
         }
         if (e == EV_SWIPE_RIGHT || e == EV_LONG_PRESS) { show_back(); return true; }
@@ -375,3 +388,29 @@ static bool m_event(ev_t e, int x, int y)
 }
 
 const screen_t scr_tarot_meaning = {"tarot-meaning", m_enter, NULL, m_event, NULL, SCR_NO_STATUS};
+
+/* ---------------- the reading of a three-card spread ---------------- */
+
+static void r_enter(lv_obj_t *root, void *arg)
+{
+    const drawn_t *d = arg;
+    int it = g_set.lang == LANG_IT;
+    for (int k = 0; k < 3; k++) {
+        int y0 = -150 + k * 100, c = d[k].card;
+        lv_obj_t *pos = ui_label(root, &font_xs, ui_accent(), T(spread_lbl[k]));
+        lv_obj_align(pos, LV_ALIGN_CENTER, 0, y0);
+        char b[96];
+        if (d[k].rev) snprintf(b, sizeof(b), "%s, %s", card_name(c), T(S_TAROT_REV_SHORT));
+        else snprintf(b, sizeof(b), "%s", card_name(c));
+        lv_obj_t *name = ui_label(root, &font_s, C_TEXT, b);
+        ui_one_line(name, 330);
+        lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_align(name, LV_ALIGN_CENTER, 0, y0 + 26);
+        lv_obj_t *t = ui_label(root, &font_xs, C_DIM, text_ok ? field[c][d[k].rev ? (it ? 5 : 6) : (it ? 3 : 4)] : "");
+        ui_one_line(t, k == 0 ? 330 : 360);
+        lv_obj_set_style_text_align(t, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_align(t, LV_ALIGN_CENTER, 0, y0 + 52);
+    }
+}
+
+const screen_t scr_tarot_reading = {"tarot-reading", r_enter, NULL, m_event, NULL, SCR_NO_STATUS};
