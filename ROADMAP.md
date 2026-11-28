@@ -14,8 +14,9 @@ What AmuletOS may get next. Nothing here is promised; the order is decided one a
 
 ## Decided
 
-- **Tarot**: major and minor arcana, round cards (find a round deck or draw one for the
-  pendant). Shake or tap to draw; single card or small spreads; the meaning on a second page.
+- **Tarot**: major and minor arcana, round cards drawn for the pendant in the **neon** style
+  (glowing lines on pure black, synthwave sun and grids, magenta rim, cyan numeral, magenta
+  name; mockups in `docs/mockups/tarot_neon_*.png`, other styles tried in `tarot_style_*.png`). Shake or tap to draw; single card or small spreads; the meaning on a second page.
   Other oracles (I Ching, runes, Lenormand) could share the app.
 - **Timers**: timer, stopwatch, pomodoro and alarms. To decide: a separate app or pages of the
   Clock app.
